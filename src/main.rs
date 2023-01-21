@@ -16,8 +16,6 @@ use grideye::Address;
 use grideye::GridEye;
 use grideye::Power;
 
-//use std::time::Instant;
-
 #[allow(unused_imports)]
 use log::error;
 #[allow(unused_imports)]
@@ -64,7 +62,6 @@ fn main() -> anyhow::Result<()> {
 
             info!("array occupies {} bytes", std::mem::size_of_val(&heat_map));
 
-            //let start = Instant::now();
             (0..8_u8).into_iter().for_each(|x| {
                 (0..8_u8).into_iter().for_each(|y| {
                     let pixel = (x * 8) + y;
@@ -74,29 +71,6 @@ fn main() -> anyhow::Result<()> {
                     heat_map.0[x as usize][y as usize] = temp;
                 })
             });
-            //let end = Instant::now();
-            //warn!("measure duration -> {:?}", end.duration_since(start));
-
-            /*
-            // by index via .get()
-            for x in 0..heat_map.len() + 1 { // OOPS, one element too far
-                match heat_map.get(x) {
-                    Some(row) => {
-                        info!("[{x}]: {row:?}");
-
-                        for y in 0..row.len() + 1 { // OOPS again
-                            match row.get(y) {
-                                Some(pixel) => {
-                                    info!("[{x}, {y}] {pixel:?}");
-                                },
-                                None => error!("Error {} is too far!", y),
-                            }
-                        };
-                    },
-                    None => error!("Error {} is too far!", x),
-                }
-            }
-            */
 
             info!("heat_map_display:\n\n{heat_map}");
 

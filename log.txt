@@ -1,0 +1,67 @@
+I (43) boot: ESP-IDF 9ee3c83-dirty 2nd stage bootloader
+I (43) boot: compile time 10:46:25
+I (43) boot: chip revision: 3
+I (45) boot.esp32c3: SPI Speed      : 80MHz
+I (50) boot.esp32c3: SPI Mode       : DIO
+I (55) boot.esp32c3: SPI Flash Size : 4MB
+I (59) boot: Enabling RNG early entropy source...
+I (65) boot: Partition Table:
+I (68) boot: ## Label            Usage          Type ST Offset   Length
+I (76) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (83) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (90) boot:  2 factory          factory app      00 00 00010000 00100000
+I (98) boot: End of partition table
+I (102) boot_comm: chip revision: 3, min. application chip revision: 0
+I (109) esp_image: segment 0: paddr=00010020 vaddr=3c050020 size=11d70h ( 73072) map
+I (130) esp_image: segment 1: paddr=00021d98 vaddr=3fc8ba00 size=015a0h (  5536) load
+I (131) esp_image: segment 2: paddr=00023340 vaddr=40380000 size=0b928h ( 47400) load
+I (144) esp_image: segment 3: paddr=0002ec70 vaddr=00000000 size=013a8h (  5032) 
+I (145) esp_image: segment 4: paddr=00030020 vaddr=42000020 size=42170h (270704) map
+I (199) boot: Loaded app from partition at offset 0x10000
+I (199) boot: Disabling RNG early entropy source...
+I (210) cpu_start: Pro cpu up.
+I (219) cpu_start: Pro cpu start user code
+I (219) cpu_start: cpu freq: 160000000
+I (219) cpu_start: Application information:
+I (221) cpu_start: Project name:     libespidf
+I (227) cpu_start: App version:      1
+I (231) cpu_start: Compile time:     Jan 21 2023 10:46:21
+I (237) cpu_start: ELF file SHA256:  0000000000000000...
+I (243) cpu_start: ESP-IDF:          9ee3c83-dirty
+I (249) heap_init: Initializing. RAM available for dynamic allocation:
+I (256) heap_init: At 3FC8DF00 len 0004E810 (314 KiB): DRAM
+I (262) heap_init: At 3FCDC710 len 00002950 (10 KiB): STACK/DRAM
+I (269) heap_init: At 50000020 len 00001FE0 (7 KiB): RTCRAM
+I (275) spi_flash: detected chip: generic
+I (280) spi_flash: flash io: dio
+I (284) sleep: Configure to isolate all GPIO pins in sleep state
+I (290) sleep: Enable automatic switching of GPIO sleep configuration
+I (297) cpu_start: Starting scheduler.
+I (302) rust_esp32_std_amg8833: ### amg8833
+W (302) rust_esp32_std_amg8833: machine_uptime: 18900.06582s wakeup: Unknown
+W (312) rust_esp32_std_amg8833::i2c: ### I2C pins via CONF >>> sda: 10 scl: 8
+W (322) rust_esp32_std_amg8833: device >>> raw: 0000000110010010 / temperature: Ok(25.125)
+I (322) rust_esp32_std_amg8833: array occupies 256 bytes
+I (352) rust_esp32_std_amg8833: heat_map_display:
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * *                                                                                            
+*                                                   *                                                                                            
+*  20.75 20.50 21.25 21.75 21.75 21.50 21.25 21.00  *                                                                                            
+*                                                   *                                                                                            
+*  21.25 21.75 22.25 22.50 22.75 22.75 22.25 22.50  *                                                                                            
+*                                                   *                                                                                            
+*  21.25 21.75 23.25 26.00 27.00 25.25 22.75 23.00  *                                                                                            
+*                                                   *                                                                                            
+*  21.50 22.25 26.25 28.75 28.50 27.50 24.25 24.75  *                                                                                            
+*                                                   *                                                                                            
+*  22.50 26.50 28.00 29.00 28.25 28.50 26.25 28.00  *                                                                                            
+*                                                   *                                                                                            
+*  22.00 27.00 27.75 28.50 28.25 27.50 27.00 28.75  *                                                                                            
+*                                                   *                                                                                            
+*  22.00 23.00 24.25 27.50 26.75 26.25 28.25 28.00  *                                                                                            
+*                                                   *                                                                                            
+*  23.25 24.25 24.50 24.00 24.75 27.75 28.75 25.50  *                                                                                            
+*                                                   *                                                                                            
+* * * * * * * * * * * * * * * * * * * * * * * * * * *                                                                                            
+
+I (432) rust_esp32_std_amg8833: chrrr...

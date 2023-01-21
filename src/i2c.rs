@@ -18,32 +18,16 @@ use esp_idf_hal::gpio::OutputPin;
 pub fn config<SDA, SCL>(
     i2c: I2C0,
     pin_sda: SDA,
-    pin_scl: SCL, //) -> Option<I2cDriver<'static>>
+    pin_scl: SCL,
 ) -> Result<I2cDriver<'static>, esp_idf_sys::EspError>
 where
     SDA: OutputPin + InputPin,
     SCL: OutputPin + InputPin,
 {
-    warn!(
-        "### I2C pins via CONF >>> sda: {:?} scl: {:?}",
-        pin_sda.pin(),
-        pin_scl.pin(),
-    );
-
     let i2c_config = I2cConfig::new().baudrate(
         400.kHz() // 100 in newer code somewhere or doc ???
             .into(),
     );
 
-    /*
-    match I2cDriver::new(i2c, pin_sda, pin_scl, &i2c_config) {
-        Ok(i2c) => Some(i2c),
-        Err(e) => {
-            error!("### i2c Driver Error: {:?}", e);
-
-            None
-        }
-    }
-    */
     I2cDriver::new(i2c, pin_sda, pin_scl, &i2c_config)
 }
