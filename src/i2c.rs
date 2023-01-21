@@ -15,7 +15,11 @@ use esp_idf_hal::gpio::InputPin;
 use esp_idf_hal::gpio::OutputPin;
 
 //
-pub fn config<SDA, SCL>(i2c: I2C0, pin_sda: SDA, pin_scl: SCL) -> Option<I2cDriver<'static>>
+pub fn config<SDA, SCL>(
+    i2c: I2C0,
+    pin_sda: SDA,
+    pin_scl: SCL, //) -> Option<I2cDriver<'static>>
+) -> Result<I2cDriver<'static>, esp_idf_sys::EspError>
 where
     SDA: OutputPin + InputPin,
     SCL: OutputPin + InputPin,
@@ -31,6 +35,7 @@ where
             .into(),
     );
 
+    /*
     match I2cDriver::new(i2c, pin_sda, pin_scl, &i2c_config) {
         Ok(i2c) => Some(i2c),
         Err(e) => {
@@ -39,4 +44,6 @@ where
             None
         }
     }
+    */
+    I2cDriver::new(i2c, pin_sda, pin_scl, &i2c_config)
 }
