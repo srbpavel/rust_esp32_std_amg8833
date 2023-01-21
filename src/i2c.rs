@@ -1,15 +1,7 @@
-//I2C
-#[allow(unused_imports)]
-use log::error;
-#[allow(unused_imports)]
-use log::info;
-#[allow(unused_imports)]
-use log::warn;
-
 use esp_idf_hal::i2c::I2cConfig; // TypeDefinition
 use esp_idf_hal::i2c::I2cDriver; // Struct
 use esp_idf_hal::i2c::I2C0; //
-use esp_idf_hal::units::*; //https://esp-rs.github.io/esp-idf-hal/esp_idf_hal/units/index.html
+use esp_idf_hal::units::FromValueType;
 
 use esp_idf_hal::gpio::InputPin;
 use esp_idf_hal::gpio::OutputPin;
