@@ -20,18 +20,23 @@ impl fmt::Display for FramerateWrap {
     }
 }
 
+type HeatArray<T, const N: usize> = [[T; N]; N];
+
 #[derive(Debug)]
-pub struct HeatMap(pub [[f32; 8]; 8]);
+pub struct HeatMap<T, const N: usize>(pub HeatArray<T, N>);
 
-impl ops::Deref for HeatMap {
-    type Target = [[f32; 8]; 8];
-
+impl<T, const N: usize> ops::Deref for HeatMap<T, N> {
+    type Target = HeatArray<T, N>;
+    
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl fmt::Display for HeatMap {
+impl<T, const N: usize> fmt::Display for HeatMap<T, N>
+where
+    T: fmt::Display,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut line = 0;
         let cell = 8 * 6;
