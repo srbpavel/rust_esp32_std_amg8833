@@ -21,26 +21,21 @@ use grideye::Address;
 use grideye::GridEye;
 use grideye::Power;
 
-#[allow(unused_imports)]
-use std::fmt;
-
-#[allow(unused_imports)]
 use log::error;
-#[allow(unused_imports)]
 use log::info;
-#[allow(unused_imports)]
 use log::warn;
+
 
 const SLEEP_DURATION: u16 = 30 * 1000;
 const TEMPERATURE_ERROR_VALUE: f32 = 85.0;
+const LEN: usize = 8; // array column/row size
 
 //
-#[allow(unused_doc_comments)]
 fn main() -> Result<(), WrapError<I2cError>> {
     esp_idf_sys::link_patches();
     EspLogger::initialize_default();
 
-    info!("### amg8833");
+    info!("### amg8833: array {LEN}x{LEN}");
 
     let machine_boot = EspSystemTime {}.now();
     warn!("machine_uptime: {machine_boot:?}");
@@ -60,7 +55,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
     let pin_sda = peripherals.pins.gpio8; // 10
     */
 
-    /// just to see type for error imlp
+    // just to see type for error imlp
     let i2c: Result<esp_idf_hal::i2c::I2cDriver<'_>, esp_idf_sys::EspError> =
         i2c::config(peripherals.i2c0, pin_sda, pin_scl);
 
@@ -70,7 +65,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
         loop {
             cycle_counter += 1;
 
-            /// just to see type for error imlp
+            // just to see type for error imlp
             let raw_temp: Result<u16, grideye::Error<_>> = grideye.get_device_temperature_raw();
 
             warn!(
@@ -85,32 +80,30 @@ fn main() -> Result<(), WrapError<I2cError>> {
                 warn!("framerate: Fps{}", FramerateWrap(framerate));
             }
 
-            /// 64 63 62 61 60 59 58 57
-            /// 56 55 54 53 52 51 50 49
-            /// 48 47 46 45 44 43 42 41
-            /// 40 39 38 37 36 35 34 33
-            /// 32 31 30 29 28 27 26 25
-            /// 24 23 22 21 20 19 18 17
-            /// 16 15 14 13 12 11 10  9
-            ///  8  7  6  5  4  3  2  1
-            let mut heat_map = sensor_agm::HeatMap([[0.0; 8]; 8]);
+            // 64 63 62 61 60 59 58 57
+            // 56 55 54 53 52 51 50 49
+            // 48 47 46 45 44 43 42 41
+            // 40 39 38 37 36 35 34 33
+            // 32 31 30 29 28 27 26 25
+            // 24 23 22 21 20 19 18 17
+            // 16 15 14 13 12 11 10  9
+            //  8  7  6  5  4  3  2  1
+            let mut heat_map = sensor_agm::HeatMap([[0.0; LEN]; LEN]);
 
             info!("array occupies {} bytes", std::mem::size_of_val(&heat_map));
 
-            (0..8_u8).into_iter().for_each(|x| {
-                (0..8_u8).into_iter().for_each(|y| {
-                    let pixel = (x * 8) + y;
+            (0..LEN as u8).into_iter().for_each(|x| {
+                (0..LEN as u8).into_iter().for_each(|y| {
+                    let pixel = (x * LEN as u8) + y;
 
-                    ///status
                     if x.eq(&0) && y.eq(&0) {
                         warn!("status: {:?}", grideye.pixel_temperature_out_ok());
                     }
                     
-                    /// we don't want to fall only beause a single pixel error
+                    // we don't want to fall only beause a single pixel error
                     let temp = match grideye.get_pixel_temperature_celsius(pixel) {
                         Ok(pixel_temp) => pixel_temp,
                         Err(e) => {
-                            /// just to see
                             error!("Error reading pixel x: {x} y: {y} temperature: {e:?}");
 
                             TEMPERATURE_ERROR_VALUE
@@ -123,7 +116,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
             info!("heat_map_display:\n\n{heat_map}");
 
-            /// impl csv/... format for heat map picture
+            // impl csv/... format for heat map picture
             //info!("{heat_map:?}");
 
             info!("chrrr...\n");

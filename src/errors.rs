@@ -26,4 +26,3 @@ impl<E> From<GridEyeError<E>> for WrapError<E> {
         Self::WrapGridEyeError(error)
     }
 }
-

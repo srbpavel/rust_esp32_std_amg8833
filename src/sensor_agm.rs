@@ -1,9 +1,12 @@
 use std::fmt;
 use std::fmt::Debug;
+use std::fmt::Display;
 
 use std::ops;
 
 use grideye::Framerate;
+
+use crate::LEN;
 
 pub struct FramerateWrap(pub Framerate);
 
@@ -15,7 +18,7 @@ impl fmt::Display for FramerateWrap {
             match self.0 {
                 Framerate::Fps10 => 10,
                 Framerate::Fps1 => 1,
-            } //"{:#x}", self.0 as u8,
+            }
         )
     }
 }
@@ -33,13 +36,13 @@ impl<T, const N: usize> ops::Deref for HeatMap<T, N> {
     }
 }
 
-impl<T, const N: usize> fmt::Display for HeatMap<T, N>
+impl<T, const N: usize> Display for HeatMap<T, N>
 where
-    T: fmt::Display,
+    T: Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut line = 0;
-        let cell = 8 * 6;
+        let cell = LEN * 6;
         let blank_line = format!("\n*{}*", " ".repeat((cell) + 3));
 
         self.iter().fold(Ok(()), |result, row| {
