@@ -1,5 +1,16 @@
-use rust_esp32_std_amg8833::i2c;
-use rust_esp32_std_amg8833::sensor_agm;
+mod i2c;
+mod sensor_agm;
+mod errors;
+
+use errors::WrapError;
+
+//use rust_esp32_std_amg8833::i2c;
+//use rust_esp32_std_amg8833::sensor_agm;
+//use rust_esp32_std_amg8833::sensor_agm::FramerateWrap;
+
+//use i2c;
+//use sensor_agm;
+use sensor_agm::FramerateWrap;
 
 use esp_idf_sys as _;
 
@@ -10,11 +21,13 @@ use embedded_hal::blocking::delay::DelayMs;
 
 use esp_idf_hal::delay::Ets;
 use esp_idf_hal::delay::FreeRtos;
-use esp_idf_hal::reset::WakeupReason;
 
 use grideye::Address;
 use grideye::GridEye;
 use grideye::Power;
+
+#[allow(unused_imports)]
+use std::fmt;
 
 #[allow(unused_imports)]
 use log::error;
@@ -25,38 +38,76 @@ use log::warn;
 
 const SLEEP_DURATION: u16 = 30 * 1000;
 
-//
-fn main() -> anyhow::Result<()> {
+#[allow(unused_imports)]
+use esp_idf_hal::i2c::I2cError;
+#[allow(unused_imports)]
+use esp_idf_sys::EspError;
+
+/*
+#[derive(Debug)]
+pub struct I2cErrorWrap(pub I2cError);
+
+impl fmt::Display for I2cErrorWrap {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"{}",self.0.cause())
+    }
+}
+
+impl std::error::Error for I2cErrorWrap {
+    fn description(&self) -> &str {
+        //&self.0.cause()
+        EspError::check_and_return(
+            self.0.cause().code(),
+            self.0.cause(),
+        )
+    }
+}
+*/
+
+//fn main() -> anyhow::Result<()> {
+fn main() -> Result<(), WrapError> {
+//fn main() -> Result<(), WrapError<esp_idf_hal::i2c::I2cError>> {
     esp_idf_sys::link_patches();
     EspLogger::initialize_default();
-
-    let wakeup_reason = WakeupReason::get();
 
     info!("### amg8833");
 
     let machine_boot = EspSystemTime {}.now();
-    warn!("machine_uptime: {machine_boot:?} wakeup: {wakeup_reason:?}");
-
+    warn!("machine_uptime: {machine_boot:?}");
+    let mut cycle_counter = 0;
+    
     let mut sleep = FreeRtos {};
     let delay = Ets {};
 
     let peripherals = esp_idf_hal::peripherals::Peripherals::take().unwrap();
     let pin_scl = peripherals.pins.gpio8;
     let pin_sda = peripherals.pins.gpio10;
-    let i2c = i2c::config(peripherals.i2c0, pin_sda, pin_scl)?;
 
-    let mut grideye = GridEye::new(i2c, delay, Address::Standard);
+    let i2c: Result<esp_idf_hal::i2c::I2cDriver<'_>, EspError> =
+        i2c::config(peripherals.i2c0, pin_sda, pin_scl);//?;
+
+    let mut grideye = GridEye::new(i2c?, delay, Address::Standard);
 
     if grideye.power(Power::Wakeup).is_ok() {
-        // LOOP
         loop {
-            let raw_temp: Result<u16, grideye::Error<_>> = grideye.get_device_temperature_raw();
+            cycle_counter += 1;
+
+            let raw_temp: Result<u16, grideye::Error<_>> =
+                grideye.get_device_temperature_raw();
 
             warn!(
-                "device >>> raw: {:0>16} / temperature: {:?}",
+                "[{}] device >>> raw: {:0>16} / temperature: {:?}",
+                cycle_counter,
+
                 format!("{:b}", raw_temp.unwrap()),
+                //format!("{:b}", raw_temp?),
+
                 grideye.get_device_temperature_celsius(),
             );
+
+            if let Ok(framerate) = grideye.get_framerate() {
+                warn!("framerate: Fps{}", FramerateWrap(framerate));
+            }
 
             let mut heat_map = sensor_agm::HeatMap([[0.0; 8]; 8]);
 
@@ -74,7 +125,9 @@ fn main() -> anyhow::Result<()> {
 
             info!("heat_map_display:\n\n{heat_map}");
 
-            info!("chrrr...");
+            //info!("{heat_map:?}");
+
+            info!("chrrr...\n");
             sleep.delay_ms(SLEEP_DURATION);
         }
     }
