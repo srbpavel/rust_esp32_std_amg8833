@@ -4,12 +4,6 @@ mod errors;
 
 use errors::WrapError;
 
-//use rust_esp32_std_amg8833::i2c;
-//use rust_esp32_std_amg8833::sensor_agm;
-//use rust_esp32_std_amg8833::sensor_agm::FramerateWrap;
-
-//use i2c;
-//use sensor_agm;
 use sensor_agm::FramerateWrap;
 
 use esp_idf_sys as _;
@@ -43,30 +37,10 @@ use esp_idf_hal::i2c::I2cError;
 #[allow(unused_imports)]
 use esp_idf_sys::EspError;
 
-/*
-#[derive(Debug)]
-pub struct I2cErrorWrap(pub I2cError);
-
-impl fmt::Display for I2cErrorWrap {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{}",self.0.cause())
-    }
-}
-
-impl std::error::Error for I2cErrorWrap {
-    fn description(&self) -> &str {
-        //&self.0.cause()
-        EspError::check_and_return(
-            self.0.cause().code(),
-            self.0.cause(),
-        )
-    }
-}
-*/
-
 //fn main() -> anyhow::Result<()> {
-fn main() -> Result<(), WrapError> {
-//fn main() -> Result<(), WrapError<esp_idf_hal::i2c::I2cError>> {
+//fn main() -> anyhow::Result<(), WrapError> {
+//fn main() -> Result<(), WrapError> {
+fn main() -> Result<(), WrapError<esp_idf_hal::i2c::I2cError>> {
     esp_idf_sys::link_patches();
     EspLogger::initialize_default();
 
@@ -92,6 +66,13 @@ fn main() -> Result<(), WrapError> {
         loop {
             cycle_counter += 1;
 
+            // grideye::Error
+            //
+            // #[derive(Debug)]
+            // pub enum Error<E> {
+            //    /// I2C bus error
+            //    I2c(E),
+            // }
             let raw_temp: Result<u16, grideye::Error<_>> =
                 grideye.get_device_temperature_raw();
 
@@ -99,8 +80,8 @@ fn main() -> Result<(), WrapError> {
                 "[{}] device >>> raw: {:0>16} / temperature: {:?}",
                 cycle_counter,
 
-                format!("{:b}", raw_temp.unwrap()),
-                //format!("{:b}", raw_temp?),
+                //format!("{:b}", raw_temp.unwrap()),
+                format!("{:b}", raw_temp?),
 
                 grideye.get_device_temperature_celsius(),
             );
