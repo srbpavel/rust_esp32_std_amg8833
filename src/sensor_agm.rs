@@ -10,16 +10,15 @@ pub struct FramerateWrap(pub Framerate);
 impl fmt::Display for FramerateWrap {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(
-            f, "{}",
+            f,
+            "{}",
             match self.0 {
                 Framerate::Fps10 => 10,
                 Framerate::Fps1 => 1,
-            }
-            //"{:#x}", self.0 as u8,
+            } //"{:#x}", self.0 as u8,
         )
     }
 }
-   
 
 #[derive(Debug)]
 pub struct HeatMap(pub [[f32; 8]; 8]);
