@@ -21,30 +21,18 @@ use grideye::Address;
 use grideye::GridEye;
 use grideye::Power;
 
-// /*
 use ssd1306::prelude::*;
 use ssd1306::I2CDisplayInterface;
 use ssd1306::Ssd1306;
 
-// RAW img
-//use embedded_graphics::image::Image;
-//use embedded_graphics::image::ImageRaw;
-//use embedded_graphics::pixelcolor::BinaryColor;
 use embedded_graphics::prelude::*;
-
 use embedded_graphics::mono_font::ascii::FONT_6X10;
 use embedded_graphics::mono_font::MonoTextStyleBuilder;
-
 use embedded_graphics::text::Baseline;
 use embedded_graphics::text::Text;
-
 use embedded_graphics::pixelcolor::BinaryColor;
-//use embedded_graphics::pixelcolor::Rgb565;
-
 use embedded_graphics::primitives::Rectangle;
 use embedded_graphics::primitives::PrimitiveStyleBuilder;
-
-// */
 
 use log::error;
 use log::info;
@@ -98,7 +86,6 @@ fn main() -> Result<(), WrapError<I2cError>> {
     // DISPLAY
     //let interface = I2CDisplayInterface::new(i2c?);
     let interface = I2CDisplayInterface::new(i2c_proxy_2);
-    // enum BinaryColor
     let mut display = Ssd1306::new(
         interface,
         DisplaySize128x64,
@@ -107,65 +94,21 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
     display.init()?;
 
-    /* // LOGO
-    let raw: ImageRaw<BinaryColor> =
-        ImageRaw::new(include_bytes!("./rust_logo.raw"), 64);
-
-    let im = Image::new(&raw, Point::new(32, 0));
-    im.draw(&mut display)?;//.unwrap();
-    */
-
     let text_style = MonoTextStyleBuilder::new()
         .font(&FONT_6X10)
         .text_color(BinaryColor::On)
         .build();
 
     Text::with_baseline("foookume is KiNg!",
-                        //Point::zero(),
                         Point::new(0, 32),
                         text_style,
                         Baseline::Top)
         .draw(&mut display)?;
     
-    Text::with_baseline("Hello Rust!",
-                        Point::new(0, 16),
-                        text_style,
-                        Baseline::Top)
-        .draw(&mut display)?;
-
-    /* 128*64
-    // Top side 
-    display.set_pixel(0, 0, true);
-    display.set_pixel(1, 0, true);
-    display.set_pixel(2, 0, true);
-    display.set_pixel(3, 0, true);
-
-    // Right side
-    display.set_pixel(3, 0, true);
-    display.set_pixel(3, 1, true);
-    display.set_pixel(3, 2, true);
-    display.set_pixel(3, 3, true);
-
-    // Bottom side
-    display.set_pixel(0, 3, true);
-    display.set_pixel(1, 3, true);
-    display.set_pixel(2, 3, true);
-    display.set_pixel(3, 3, true);
-
-    // Left side
-    display.set_pixel(0, 0, true);
-    display.set_pixel(0, 1, true);
-    display.set_pixel(0, 2, true);
-    display.set_pixel(0, 3, true);
-    */
-    
     display.flush()?;
 
     sleep.delay_ms(SLEEP_DURATION / 10);
-    //_
-    // */
 
-    // /*
     if grideye.power(Power::Wakeup).is_ok() {
         loop {
             cycle_counter += 1;
@@ -302,16 +245,14 @@ fn main() -> Result<(), WrapError<I2cError>> {
                                 Baseline::Top)
                 .draw(&mut display)?;
 
-            let r_style = PrimitiveStyleBuilder::new()
-                //.stroke_color(Rgb565::RED)
+            let style = PrimitiveStyleBuilder::new()
                 .stroke_color(BinaryColor::On)
                 .stroke_width(1)
-                //.fill_color(Rgb565::GREEN)
                 .fill_color(BinaryColor::Off)
                 .build();
             
             Rectangle::new(Point::new(64, 32), Size::new(32, 32))
-                .into_styled(r_style)
+                .into_styled(style)
                 .draw(&mut display)?;
             
             display.flush()?;
@@ -320,7 +261,6 @@ fn main() -> Result<(), WrapError<I2cError>> {
             sleep.delay_ms(SLEEP_DURATION);
         }
     }
-    // */
 
     Ok(())
 }
