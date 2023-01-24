@@ -28,6 +28,13 @@ log = "0.4"
 
 grideye = "0.2.4"
 
+ssd1306 = "0.7.1"
+# these two are only needed for WrapError
+display-interface = "0.4.1"
+embedded-graphics = "0.7.1"
+
+shared-bus = "0.2.5"
+
 [build-dependencies]
 embuild = "0.31"
 anyhow = "1"
