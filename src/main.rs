@@ -77,6 +77,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
     let mut i2c = i2c?;
 
     // I2C SCAN
+    warn!("i2c_scan");
     let active_address = i2c::scan(&mut i2c);
     // alpha
     //let active_address = i2c::scan::<I2cDriver>(&mut i2c);
@@ -105,11 +106,12 @@ fn main() -> Result<(), WrapError<I2cError>> {
     let i2c_proxy_1 = i2c_shared.acquire_i2c();
     let i2c_proxy_2 = i2c_shared.acquire_i2c();
 
-    /*
-    //let mut i2c_proxy_3 = i2c_shared.acquire_i2c();
+    // /*
+    let mut i2c_proxy_3 = i2c_shared.acquire_i2c();
 
     std::thread::spawn(move || {
-        let active_address = i2c::scan(&mut i2c_proxy_3);
+        warn!("i2c_scan_shared");
+        let active_address = i2c::_scan_shared(&mut i2c_proxy_3);
         info!(
             "I2C active address: {:?}",
             match active_address {
@@ -126,7 +128,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
             }
         );
     });
-    */
+    // */
 
     // GRIDEYE
     let mut grideye = GridEye::new(i2c_proxy_1, delay, Address::Standard);
@@ -160,8 +162,33 @@ fn main() -> Result<(), WrapError<I2cError>> {
     if grideye.power(Power::Wakeup).is_ok() {
         loop {
             /*
+            let i2c_clone = i2c_proxy_3.clone();
+
+            std::thread::spawn(move || {
+                warn!("i2c_scan_shared_loop + thread");
+                let active_address = i2c::_scan_shared(i2c_clone);
+
+                info!(
+                    "I2C active address: {:?}",
+                    match active_address {
+                        Some(active) => {
+                            active
+                                .iter()
+                                .map(|a| format!("{a:#X} "))
+                                .collect::<Vec<String>>()
+                                .concat()
+                        }
+                        None => {
+                            String::from("")
+                        }
+                    }
+                );
+            });
+            */
+            
+            /*
             // I2C scan LOOP
-            let active_address = i2c::scan_shared(&mut i2c_proxy_3);
+            let active_address = i2c::_scan_shared(i2c_proxy_3);
 
             info!(
                 "I2C active address: {:?}",

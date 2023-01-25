@@ -11,16 +11,18 @@ use esp_idf_hal::units::FromValueType;
 use esp_idf_hal::gpio::InputPin;
 use esp_idf_hal::gpio::OutputPin;
 
-/*
+// /*
 use embedded_hal::blocking::i2c::Read;
 use embedded_hal::blocking::i2c::Write;
 use embedded_hal::blocking::i2c::WriteRead;
-
-use shared_bus::I2cProxy;
-use std::sync::Mutex;
-*/
+// */
 // alpha
 //use embedded_hal::i2c::I2c;
+    
+//use shared_bus::I2cProxy;
+//use std::sync::Mutex;
+
+
 
 const I2C_TICK_TYPE: u32 = 100; // study more what should be correct value !!!
 
@@ -45,7 +47,7 @@ where
 }
 
 //
-pub fn scan(i2c: &mut esp_idf_hal::i2c::I2cDriver<'_>) -> Option<Vec<u8>> {
+pub fn scan(i2c: &mut I2cDriver<'_>) -> Option<Vec<u8>> {
 //pub fn scan(i2c: &mut I2cProxy<'_, Mutex<I2cDriver<'static>>>) -> Option<Vec<u8>> {
 /*
 pub fn scan<I2C, E>(i2c: &mut I2C) -> Option<Vec<u8>>
@@ -99,6 +101,55 @@ where
                 // /*
                 log::warn!("{address:#X} {buffer:?}");
                 // */
+            }
+        });
+
+    if address_list.is_empty() {
+        None
+    } else {
+        Some(address_list)
+    }
+}
+
+//
+pub fn _scan_shared<I2C, E>(i2c: &mut I2C) -> Option<Vec<u8>>
+// alpha
+//pub fn _scan_shared<I2C>(i2c: &mut I2C) -> Option<Vec<u8>>
+where
+    I2C: Read<Error = E> + Write<Error = E> + WriteRead<Error = E> + Clone,
+    // alpha
+    //I2C: I2c,
+{
+    let mut i2c = i2c.clone();
+
+    let start = 0x01;
+    let end = 0x7F;
+
+    // without .filter() it will freeze
+    let invalid = [0x3C, 0x3D, 0x68, 0x69, 0x70];
+
+    let mut address_list = vec![];
+
+    (start..end)
+        .into_iter()
+        .filter(|f| {
+            !invalid.contains(f)
+        })
+        .for_each(|address| {
+            let mut buffer = [0, 0];
+
+            let read_result = i2c
+                .read(
+                    address,
+                    &mut buffer,
+                    //I2C_TICK_TYPE,
+                )
+                .map_err(WrapError::I2c);
+                
+            if read_result.is_ok() {
+                address_list.push(address);
+
+                log::warn!("{address:#X} {buffer:?}");
             }
         });
 
