@@ -30,7 +30,7 @@ pub struct HeatMap<T, const N: usize>(pub HeatArray<T, N>);
 
 impl<T, const N: usize> ops::Deref for HeatMap<T, N> {
     type Target = HeatArray<T, N>;
-    
+
     fn deref(&self) -> &Self::Target {
         &self.0
     }

@@ -25,14 +25,14 @@ use ssd1306::prelude::*;
 use ssd1306::I2CDisplayInterface;
 use ssd1306::Ssd1306;
 
-use embedded_graphics::prelude::*;
 use embedded_graphics::mono_font::ascii::FONT_6X10;
 use embedded_graphics::mono_font::MonoTextStyleBuilder;
+use embedded_graphics::pixelcolor::BinaryColor;
+use embedded_graphics::prelude::*;
+use embedded_graphics::primitives::PrimitiveStyleBuilder;
+use embedded_graphics::primitives::Rectangle;
 use embedded_graphics::text::Baseline;
 use embedded_graphics::text::Text;
-use embedded_graphics::pixelcolor::BinaryColor;
-use embedded_graphics::primitives::Rectangle;
-use embedded_graphics::primitives::PrimitiveStyleBuilder;
 
 use log::error;
 use log::info;
@@ -74,28 +74,41 @@ fn main() -> Result<(), WrapError<I2cError>> {
     let mut i2c = i2c?;
 
     // I2C SCAN
-    i2c::scan(&mut i2c);
+    let active_address = i2c::scan(&mut i2c);
+
+    info!(
+        "I2C active address: {:?}",
+        match active_address {
+            Some(active) => {
+                active
+                    .iter()
+                    .map(|a| format!("{a:#X} "))
+                    .collect::<Vec<String>>()
+                    .concat()
+            }
+            None => {
+                String::from("")
+            }
+        }
+    );
 
     // I2C SHARED
     // BusManager<NullMutex<I2cDriver<'static>>>
-    //let i2c_shared = i2c::config_shared(peripherals.i2c0, pin_sda, pin_scl)?;
     let i2c_shared = shared_bus::BusManagerSimple::new(i2c);
-
+    
     // https://docs.rs/shared-bus/0.2.5/shared_bus/
     // holds reference to bus via mutex
-    let i2c_proxy_1 = i2c_shared.acquire_i2c();
-    let i2c_proxy_2 = i2c_shared.acquire_i2c();
+    let mut i2c_proxy_1 = i2c_shared.acquire_i2c();
+    let mut i2c_proxy_2 = i2c_shared.acquire_i2c();
+    let mut i2c_proxy_3 = i2c_shared.acquire_i2c();
 
     // GRIDEYE
     let mut grideye = GridEye::new(i2c_proxy_1, delay, Address::Standard);
 
     // DISPLAY
     let interface = I2CDisplayInterface::new(i2c_proxy_2);
-    let mut display = Ssd1306::new(
-        interface,
-        DisplaySize128x64,
-        DisplayRotation::Rotate0,
-    ).into_buffered_graphics_mode();
+    let mut display = Ssd1306::new(interface, DisplaySize128x64, DisplayRotation::Rotate0)
+        .into_buffered_graphics_mode();
 
     display.init()?;
 
@@ -104,25 +117,48 @@ fn main() -> Result<(), WrapError<I2cError>> {
         .text_color(BinaryColor::On)
         .build();
 
-    Text::with_baseline("foookume is KiNg!",
-                        Point::new(0, 32),
-                        text_style,
-                        Baseline::Top)
-        .draw(&mut display)?;
-    
+    Text::with_baseline(
+        "foookume is KiNg!",
+        Point::new(0, 32),
+        text_style,
+        Baseline::Top,
+    )
+    .draw(&mut display)?;
+
     display.flush()?;
 
     sleep.delay_ms(SLEEP_DURATION / 10);
 
     if grideye.power(Power::Wakeup).is_ok() {
         loop {
+            /*
+            // I2C scan LOOP
+            let active_address = i2c::scan_shared(&mut i2c_proxy_3);
+
+            info!(
+                "I2C active address: {:?}",
+                match active_address {
+                    Some(active) => {
+                        active
+                            .iter()
+                            .map(|a| format!("{a:#X} "))
+                            .collect::<Vec<String>>()
+                            .concat()
+                    }
+                    None => {
+                        String::from("")
+                    }
+                }
+            );
+            */
+
             cycle_counter += 1;
 
             // just to see type for error imlp
             let raw_temp: Result<u16, grideye::Error<_>> = grideye.get_device_temperature_raw();
 
             let device_temperature = grideye.get_device_temperature_celsius()?;
-            
+
             warn!(
                 "[{}] device >>> raw: {:0>16} / temperature: {}°C / status: {}",
                 cycle_counter, // since last flash or soft-boot
@@ -153,9 +189,9 @@ fn main() -> Result<(), WrapError<I2cError>> {
             let mut grid_raw = [0.0; LEN * LEN];
             let mut max_temperature = -55.;
             let mut min_temperature = 125.;
-            
+
             let mut pixel_index = 0;
-            
+
             (0..LEN as u8).into_iter().for_each(|x| {
                 (0..LEN as u8).into_iter().for_each(|y| {
                     let pixel = (x * LEN as u8) + y;
@@ -163,7 +199,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
                     if x.eq(&0) && y.eq(&0) {
                         warn!("status: {:?}", grideye.pixel_temperature_out_ok());
                     }
-                    
+
                     // we don't want to fall only beause a single pixel error
                     let temp = match grideye.get_pixel_temperature_celsius(pixel) {
                         Ok(pixel_temp) => pixel_temp,
@@ -179,12 +215,15 @@ fn main() -> Result<(), WrapError<I2cError>> {
                     grid_raw[pixel_index as usize] = temp;
                     pixel_index += 1;
 
-                    if temp > max_temperature { max_temperature = temp }
-                    if temp < min_temperature { min_temperature = temp }
+                    if temp > max_temperature {
+                        max_temperature = temp
+                    }
+                    if temp < min_temperature {
+                        min_temperature = temp
+                    }
                 })
             });
             // */
-
             // DEBUG
             //info!("debug: {heat_map:?}");
 
@@ -200,13 +239,13 @@ fn main() -> Result<(), WrapError<I2cError>> {
                             Ok(pixel_temp) => pixel_temp,
                             Err(e) => {
                                 error!("Error reading pixel index: {index} temperature: {e:?}");
-                                
+
                                 TEMPERATURE_ERROR_VALUE
                             }
                         };
-                    
+
                     grid_raw[index as usize] = temp;
-                    
+
                 });
             */
 
@@ -223,51 +262,58 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
             display.clear();
 
-            Text::with_baseline(&format!("{cycle_counter}"),
-                                Point::new(0, 0),
-                                text_style,
-                                Baseline::Top)
-                .draw(&mut display)?;
-            
-            Text::with_baseline(&format!("{device_temperature}"),
-                                Point::new(0, 16),
-                                text_style,
-                                Baseline::Top)
-                .draw(&mut display)?;
-
-            Text::with_baseline(&format!("max:  {max_temperature}"),
-                                Point::new(48, 0),
-                                text_style,
-                                Baseline::Top)
-                .draw(&mut display)?;
-            
-            Text::with_baseline(&format!("min:  {min_temperature}"),
-                                Point::new(48, 16),
-                                text_style,
-                                Baseline::Top)
-                .draw(&mut display)?;
+            Text::with_baseline(
+                &format!("{cycle_counter}"),
+                Point::new(0, 0),
+                text_style,
+                Baseline::Top,
+            )
+            .draw(&mut display)?;
 
             Text::with_baseline(
-                &format!("diff: {}",
-                         max_temperature - min_temperature,
-                ),
+                &format!("{device_temperature}"),
+                Point::new(0, 16),
+                text_style,
+                Baseline::Top,
+            )
+            .draw(&mut display)?;
+
+            Text::with_baseline(
+                &format!("max:  {max_temperature}"),
+                Point::new(48, 0),
+                text_style,
+                Baseline::Top,
+            )
+            .draw(&mut display)?;
+
+            Text::with_baseline(
+                &format!("min:  {min_temperature}"),
+                Point::new(48, 16),
+                text_style,
+                Baseline::Top,
+            )
+            .draw(&mut display)?;
+
+            Text::with_baseline(
+                &format!("diff: {}", max_temperature - min_temperature,),
                 Point::new(48, 32),
                 text_style,
-                Baseline::Top)
-                .draw(&mut display)?;
+                Baseline::Top,
+            )
+            .draw(&mut display)?;
 
             let style = PrimitiveStyleBuilder::new()
                 .stroke_color(BinaryColor::On)
                 .stroke_width(1)
                 .fill_color(BinaryColor::Off)
                 .build();
-            
+
             Rectangle::new(Point::new(48, 48), Size::new(16, 16))
                 .into_styled(style)
                 .draw(&mut display)?;
-            
+
             display.flush()?;
-            
+
             info!("chrrr...\n");
             sleep.delay_ms(SLEEP_DURATION);
         }
