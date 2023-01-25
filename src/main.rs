@@ -67,26 +67,29 @@ fn main() -> Result<(), WrapError<I2cError>> {
     let pin_sda = peripherals.pins.gpio8; // 10
     */
 
-    /*
-    // I2C just to see type for error imlp
+    // I2C type just to see type for error imlp
     let i2c: Result<esp_idf_hal::i2c::I2cDriver<'_>, esp_idf_sys::EspError> =
         i2c::config(peripherals.i2c0, pin_sda, pin_scl);
-    */
+
+    let mut i2c = i2c?;
+
+    // I2C SCAN
+    i2c::scan(&mut i2c);
 
     // I2C SHARED
-    let i2c_shared = i2c::config_shared(peripherals.i2c0, pin_sda, pin_scl)?;
+    // BusManager<NullMutex<I2cDriver<'static>>>
+    //let i2c_shared = i2c::config_shared(peripherals.i2c0, pin_sda, pin_scl)?;
+    let i2c_shared = shared_bus::BusManagerSimple::new(i2c);
+
     // https://docs.rs/shared-bus/0.2.5/shared_bus/
     // holds reference to bus via mutex
-    let i2c_proxy_1 =i2c_shared.acquire_i2c();
-    let i2c_proxy_2 =i2c_shared.acquire_i2c();
-    
+    let i2c_proxy_1 = i2c_shared.acquire_i2c();
+    let i2c_proxy_2 = i2c_shared.acquire_i2c();
+
     // GRIDEYE
-    //let mut grideye = GridEye::new(i2c?, delay, Address::Standard);
     let mut grideye = GridEye::new(i2c_proxy_1, delay, Address::Standard);
 
-    // /*
     // DISPLAY
-    //let interface = I2CDisplayInterface::new(i2c?);
     let interface = I2CDisplayInterface::new(i2c_proxy_2);
     let mut display = Ssd1306::new(
         interface,
