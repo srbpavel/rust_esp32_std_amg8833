@@ -10,6 +10,7 @@ pub enum WrapError<E> {
     WrapGridEyeError(GridEyeError<E>),
     WrapDisplayError(DisplayError), // BusWriteError if display not found
     I2c(E),
+    I2cError,
 }
 
 impl<E> From<DisplayError> for WrapError<E> {

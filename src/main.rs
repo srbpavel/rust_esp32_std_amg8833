@@ -12,10 +12,13 @@ use esp_idf_svc::log::EspLogger;
 use esp_idf_svc::systime::EspSystemTime;
 
 use embedded_hal::blocking::delay::DelayMs;
+// alpha
+//use embedded_hal::delay::DelayUs;
 
 use esp_idf_hal::delay::Ets;
 use esp_idf_hal::delay::FreeRtos;
 use esp_idf_hal::i2c::I2cError;
+use esp_idf_hal::i2c::I2cDriver;
 
 use grideye::Address;
 use grideye::GridEye;
@@ -75,6 +78,8 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
     // I2C SCAN
     let active_address = i2c::scan(&mut i2c);
+    // alpha
+    //let active_address = i2c::scan::<I2cDriver>(&mut i2c);
 
     info!(
         "I2C active address: {:?}",
@@ -94,13 +99,34 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
     // I2C SHARED
     // BusManager<NullMutex<I2cDriver<'static>>>
-    let i2c_shared = shared_bus::BusManagerSimple::new(i2c);
+    //let i2c_shared = shared_bus::BusManagerSimple::new(i2c);
+    let i2c_shared: &'static _ = shared_bus::new_std!(I2cDriver = i2c).ok_or(WrapError::I2cError)?;
     
-    // https://docs.rs/shared-bus/0.2.5/shared_bus/
-    // holds reference to bus via mutex
     let i2c_proxy_1 = i2c_shared.acquire_i2c();
     let i2c_proxy_2 = i2c_shared.acquire_i2c();
+
+    /*
     //let mut i2c_proxy_3 = i2c_shared.acquire_i2c();
+
+    std::thread::spawn(move || {
+        let active_address = i2c::scan(&mut i2c_proxy_3);
+        info!(
+            "I2C active address: {:?}",
+            match active_address {
+                Some(active) => {
+                    active
+                        .iter()
+                        .map(|a| format!("{a:#X} "))
+                        .collect::<Vec<String>>()
+                        .concat()
+                }
+                None => {
+                    String::from("")
+                }
+            }
+        );
+    });
+    */
 
     // GRIDEYE
     let mut grideye = GridEye::new(i2c_proxy_1, delay, Address::Standard);
@@ -128,6 +154,8 @@ fn main() -> Result<(), WrapError<I2cError>> {
     display.flush()?;
 
     sleep.delay_ms(SLEEP_DURATION / 10);
+    // alpha
+    //let _ = sleep.delay_ms((SLEEP_DURATION / 10).into());
 
     if grideye.power(Power::Wakeup).is_ok() {
         loop {
@@ -316,6 +344,8 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
             info!("chrrr...\n");
             sleep.delay_ms(SLEEP_DURATION);
+            // alpha
+            //let _ = sleep.delay_ms((SLEEP_DURATION).into());
         }
     }
 

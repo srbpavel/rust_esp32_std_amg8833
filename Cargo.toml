@@ -21,7 +21,9 @@ esp-idf-sys = { version = "0.32.1", features = ["binstart"] }
 esp-idf-svc = { version="0.45.0", features = ["experimental", "alloc"] }
 esp-idf-hal = "0.40.1"
 embedded-svc = "0.24"
+
 embedded-hal = { version="0.2.7", features = ["unproven"] }
+#embedded-hal = { version="1.0.0-alpha.9" }
 
 anyhow = "1"
 log = "0.4"
@@ -33,7 +35,7 @@ ssd1306 = "0.7.1"
 display-interface = "0.4.1"
 embedded-graphics = "0.7.1"
 
-shared-bus = "0.2.5"
+shared-bus = { version="0.2.5", features = ["std"]}
 
 [build-dependencies]
 embuild = "0.31"
