@@ -98,9 +98,9 @@ fn main() -> Result<(), WrapError<I2cError>> {
     
     // https://docs.rs/shared-bus/0.2.5/shared_bus/
     // holds reference to bus via mutex
-    let mut i2c_proxy_1 = i2c_shared.acquire_i2c();
-    let mut i2c_proxy_2 = i2c_shared.acquire_i2c();
-    let mut i2c_proxy_3 = i2c_shared.acquire_i2c();
+    let i2c_proxy_1 = i2c_shared.acquire_i2c();
+    let i2c_proxy_2 = i2c_shared.acquire_i2c();
+    //let mut i2c_proxy_3 = i2c_shared.acquire_i2c();
 
     // GRIDEYE
     let mut grideye = GridEye::new(i2c_proxy_1, delay, Address::Standard);

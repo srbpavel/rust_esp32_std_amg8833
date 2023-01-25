@@ -99,18 +99,12 @@ pub fn scan(i2c: &mut esp_idf_hal::i2c::I2cDriver<'_>) -> Option<Vec<u8>> {
 }
 
 /*
-use shared_bus::NullMutex;
-use shared_bus::I2cProxy;
-use embedded_hal::prelude::_embedded_hal_blocking_i2c_Read;
-*/
-
 use embedded_hal::blocking::i2c::Read;
 use embedded_hal::blocking::i2c::Write;
 use embedded_hal::blocking::i2c::WriteRead;
 
 //
 pub fn scan_shared<I2C, E>(i2c: &mut I2C,
-//pub fn scan_shared<I2C, E>(i2c: I2C,
 ) -> Option<Vec<u8>>
 where
     I2C: Read<Error = E> + Write<Error = E> + WriteRead<Error = E> + Clone,
@@ -126,7 +120,6 @@ where
         .for_each(|address| {
             let mut buffer = [0, 0];
 
-            // /*
             log::warn!("going to i2c_read: {address:#X}");
             let read_result = i2c
                 .read(
@@ -139,11 +132,8 @@ where
             if read_result.is_ok() {
                 address_list.push(address);
 
-                // /*
                 log::warn!("{address:#X} {buffer:?}");
-                // */
             }
-            // */
         });
 
     if address_list.is_empty() {
@@ -152,4 +142,4 @@ where
         Some(address_list)
     }
 }
-
+*/
