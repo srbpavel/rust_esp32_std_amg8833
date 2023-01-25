@@ -75,6 +75,8 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
     // I2C SHARED
     let i2c_shared = i2c::config_shared(peripherals.i2c0, pin_sda, pin_scl)?;
+    // https://docs.rs/shared-bus/0.2.5/shared_bus/
+    // holds reference to bus via mutex
     let i2c_proxy_1 =i2c_shared.acquire_i2c();
     let i2c_proxy_2 =i2c_shared.acquire_i2c();
     
@@ -174,13 +176,8 @@ fn main() -> Result<(), WrapError<I2cError>> {
                     grid_raw[pixel_index as usize] = temp;
                     pixel_index += 1;
 
-                    if temp > max_temperature {
-                        max_temperature = temp;
-                    }
-
-                    if temp < min_temperature {
-                        min_temperature = temp;
-                    }
+                    if temp > max_temperature { max_temperature = temp }
+                    if temp < min_temperature { min_temperature = temp }
                 })
             });
             // */
@@ -210,6 +207,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
                 });
             */
 
+            /*
             let grid_base = grid_raw.chunks(LEN);
             println!("grid_base: {:?}\n", grid_base);
 
@@ -218,10 +216,11 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
             let grid_slice: &[&[f32]] = grid_vec.as_slice();
             println!("grid_slice: {:?}", grid_slice);
+            */
 
             display.clear();
 
-            Text::with_baseline(&format!("cycle: {cycle_counter}"),
+            Text::with_baseline(&format!("{cycle_counter}"),
                                 Point::new(0, 0),
                                 text_style,
                                 Baseline::Top)
@@ -233,16 +232,25 @@ fn main() -> Result<(), WrapError<I2cError>> {
                                 Baseline::Top)
                 .draw(&mut display)?;
 
-            Text::with_baseline(&format!("max: {max_temperature}"),
-                                Point::new(64, 0),
+            Text::with_baseline(&format!("max:  {max_temperature}"),
+                                Point::new(48, 0),
                                 text_style,
                                 Baseline::Top)
                 .draw(&mut display)?;
             
-            Text::with_baseline(&format!("min: {min_temperature}"),
-                                Point::new(64, 16),
+            Text::with_baseline(&format!("min:  {min_temperature}"),
+                                Point::new(48, 16),
                                 text_style,
                                 Baseline::Top)
+                .draw(&mut display)?;
+
+            Text::with_baseline(
+                &format!("diff: {}",
+                         max_temperature - min_temperature,
+                ),
+                Point::new(48, 32),
+                text_style,
+                Baseline::Top)
                 .draw(&mut display)?;
 
             let style = PrimitiveStyleBuilder::new()
@@ -251,7 +259,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
                 .fill_color(BinaryColor::Off)
                 .build();
             
-            Rectangle::new(Point::new(64, 32), Size::new(32, 32))
+            Rectangle::new(Point::new(48, 48), Size::new(16, 16))
                 .into_styled(style)
                 .draw(&mut display)?;
             

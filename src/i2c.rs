@@ -20,12 +20,19 @@ where
     SDA: OutputPin + InputPin,
     SCL: OutputPin + InputPin,
 {
-    let i2c_config = I2cConfig::new().baudrate(
-        400.kHz() // 100 in newer code somewhere or doc ???
-            .into(),
-    );
+    let i2c_config = I2cConfig::new()
+        // baudrate is in Hertz
+        .baudrate(400.kHz() // 100 in newer code somewhere or doc ???
+                  .into(),
+        );
 
-    I2cDriver::new(i2c, pin_sda, pin_scl, &i2c_config)
+    let i2c_driver = I2cDriver::new(i2c, pin_sda, pin_scl, &i2c_config);
+
+    //todo!()
+    // list all addresses
+
+    i2c_driver
+        
 }
 
 //
