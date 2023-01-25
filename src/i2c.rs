@@ -22,8 +22,6 @@ use embedded_hal::blocking::i2c::WriteRead;
 //use shared_bus::I2cProxy;
 //use std::sync::Mutex;
 
-
-
 const I2C_TICK_TYPE: u32 = 100; // study more what should be correct value !!!
 
 //
@@ -112,22 +110,22 @@ where
 }
 
 //
-pub fn _scan_shared<I2C, E>(i2c: &mut I2C) -> Option<Vec<u8>>
+pub fn scan_shared<I2C, E>(i2c: &mut I2C) -> Option<Vec<u8>>
 // alpha
 //pub fn _scan_shared<I2C>(i2c: &mut I2C) -> Option<Vec<u8>>
 where
+    //I2C: Read<Error = E> + Write<Error = E> + WriteRead<Error = E> + Clone + std::fmt::Debug,
     I2C: Read<Error = E> + Write<Error = E> + WriteRead<Error = E> + Clone,
     // alpha
     //I2C: I2c,
 {
-    let mut i2c = i2c.clone();
-
     let start = 0x01;
     let end = 0x7F;
 
     // without .filter() it will freeze
     let invalid = [0x3C, 0x3D, 0x68, 0x69, 0x70];
-
+    //let invalid = [];
+    
     let mut address_list = vec![];
 
     (start..end)
@@ -137,10 +135,16 @@ where
         })
         .for_each(|address| {
             let mut buffer = [0, 0];
+            //let mut buffer = [0; 25];
 
+            //let register = 0x00;
+            //let mut cmd = [register];
+            
             let read_result = i2c
                 .read(
+                //.write_read(
                     address,
+                    //&mut cmd,
                     &mut buffer,
                     //I2C_TICK_TYPE,
                 )
@@ -150,6 +154,18 @@ where
                 address_list.push(address);
 
                 log::warn!("{address:#X} {buffer:?}");
+
+                /*
+                let register = 0x00;
+                let cmd = [register];
+                 //warn!("going to i2c_write");
+                let write_result = i2c
+                    .write(address as u8, &cmd)
+                    //.map_err(grideye::Error::I2c);
+                    .map_err(WrapError::I2c);
+                //log::warn!("i2c_write_result: {write_result:?}");
+                log::warn!("i2c_write_result: ERROR {address:#X}");
+                */
             }
         });
 
@@ -159,3 +175,47 @@ where
         Some(address_list)
     }
 }
+
+/*
+//
+pub fn scan_i2c_shared<I2C, E>(i2c: &mut I2C) -> Option<Vec<u8>>
+where
+    I2C: Read<Error = E> + Write<Error = E> + WriteRead<Error = E>,
+{
+    let start = 0x01;
+    let end = 0x7F;
+
+    let invalid = [0x3C, 0x3D, 0x68, 0x69, 0x70];
+    //let invalid = [];
+    
+    let mut address_list = vec![];
+
+    (start..end)
+        .into_iter()
+        .filter(|f| {
+            !invalid.contains(f)
+        })
+        .for_each(|address| {
+            let mut buffer = [0, 0];
+            
+            let read_result = i2c
+                .read(
+                    address,
+                    &mut buffer,
+                )
+                .map_err(WrapError::I2c);
+            
+            if read_result.is_ok() {
+                address_list.push(address);
+                
+                log::warn!("{address:#X} {buffer:?}");
+            }
+        });
+    
+    if address_list.is_empty() {
+        None
+    } else {
+        Some(address_list)
+    }
+}
+*/

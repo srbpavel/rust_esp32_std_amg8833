@@ -111,7 +111,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
     std::thread::spawn(move || {
         warn!("i2c_scan_shared");
-        let active_address = i2c::_scan_shared(&mut i2c_proxy_3);
+        let active_address = i2c::scan_shared(&mut i2c_proxy_3);
         info!(
             "I2C active address: {:?}",
             match active_address {
@@ -166,7 +166,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
             std::thread::spawn(move || {
                 warn!("i2c_scan_shared_loop + thread");
-                let active_address = i2c::_scan_shared(i2c_clone);
+                let active_address = i2c::scan_shared(i2c_clone);
 
                 info!(
                     "I2C active address: {:?}",
