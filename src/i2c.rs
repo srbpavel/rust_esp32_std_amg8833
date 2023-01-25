@@ -2,7 +2,7 @@ use crate::errors;
 
 use errors::WrapError;
 
-use esp_idf_hal::i2c::I2cError;
+//use esp_idf_hal::i2c::I2cError;
 use esp_idf_hal::i2c::I2cConfig; // TypeDefinition
 use esp_idf_hal::i2c::I2cDriver; // Struct
 use esp_idf_hal::i2c::I2C0; //
@@ -11,7 +11,11 @@ use esp_idf_hal::units::FromValueType;
 use esp_idf_hal::gpio::InputPin;
 use esp_idf_hal::gpio::OutputPin;
 
-//use log;
+/*
+use embedded_hal::blocking::i2c::Read;
+use embedded_hal::blocking::i2c::Write;
+use embedded_hal::blocking::i2c::WriteRead;
+*/
 
 const I2C_TICK_TYPE: u32 = 100; // study more what should be correct value !!!
 
@@ -36,6 +40,12 @@ where
 }
 
 pub fn scan(i2c: &mut esp_idf_hal::i2c::I2cDriver<'_>) -> Option<Vec<u8>> {
+/*
+pub fn scan<I2C, E>(i2c: &mut I2C) -> Option<Vec<u8>>
+where
+    I2C: Read<Error = E> + Write<Error = E> + WriteRead<Error = E>,
+{
+*/
     //let address = 0x3C; // ssd1306 default
     //let address = 0x3D; // ssd1306 alternate
     //let address = 0x69; // grideye standard
@@ -78,7 +88,8 @@ pub fn scan(i2c: &mut esp_idf_hal::i2c::I2cDriver<'_>) -> Option<Vec<u8>> {
                     &mut buffer,
                     I2C_TICK_TYPE,
                 )
-                .map_err(WrapError::<I2cError>::WrapEspError);
+                //.map_err(WrapError::<I2cError>::WrapEspError);
+                .map_err(WrapError::I2c);
                 
             if read_result.is_ok() {
                 address_list.push(address);
@@ -99,9 +110,6 @@ pub fn scan(i2c: &mut esp_idf_hal::i2c::I2cDriver<'_>) -> Option<Vec<u8>> {
 }
 
 /*
-use embedded_hal::blocking::i2c::Read;
-use embedded_hal::blocking::i2c::Write;
-use embedded_hal::blocking::i2c::WriteRead;
 
 //
 pub fn scan_shared<I2C, E>(i2c: &mut I2C,
