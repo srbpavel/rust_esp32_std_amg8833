@@ -45,6 +45,15 @@ const SLEEP_DURATION: u16 = 30 * 1000;
 const TEMPERATURE_ERROR_VALUE: f32 = 85.0;
 const LEN: usize = 8; // array column/row size
 
+/*
+use esp_idf_hal::gpio::AnyIOPin;
+use esp_idf_hal::gpio::Gpio0;
+use esp_idf_hal::gpio::IOPin;
+const NO_PIN: Option<AnyIOPin> = None;
+const ANY_PIN: Option<AnyIOPin> = Some(unsafe { Gpio0::new().into() });
+//const ANY_PIN: Option<AnyIOPin> = Some(unsafe {Gpio0::new().downgrade()});
+*/
+
 //
 fn main() -> Result<(), WrapError<I2cError>> {
     esp_idf_sys::link_patches();
@@ -76,11 +85,10 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
     let mut i2c = i2c?;
 
+    // /*
     // I2C SCAN
     warn!("i2c_scan");
     let active_address = i2c::scan(&mut i2c);
-    // alpha
-    //let active_address = i2c::scan::<I2cDriver>(&mut i2c);
 
     info!(
         "I2C active address: {:?}",
@@ -97,7 +105,8 @@ fn main() -> Result<(), WrapError<I2cError>> {
             }
         }
     );
-
+    // */
+    
     // I2C SHARED
     // BusManager<NullMutex<I2cDriver<'static>>>
     //let i2c_shared = shared_bus::BusManagerSimple::new(i2c);

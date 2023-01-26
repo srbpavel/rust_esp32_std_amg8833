@@ -111,19 +111,15 @@ where
 
 //
 pub fn scan_shared<I2C, E>(i2c: &mut I2C) -> Option<Vec<u8>>
-// alpha
-//pub fn _scan_shared<I2C>(i2c: &mut I2C) -> Option<Vec<u8>>
 where
-    //I2C: Read<Error = E> + Write<Error = E> + WriteRead<Error = E> + Clone + std::fmt::Debug,
-    I2C: Read<Error = E> + Write<Error = E> + WriteRead<Error = E> + Clone,
-    // alpha
-    //I2C: I2c,
+    I2C: Read<Error = E> + Write<Error = E> + WriteRead<Error = E>,
 {
     let start = 0x01;
     let end = 0x7F;
 
     // without .filter() it will freeze
     let invalid = [0x3C, 0x3D, 0x68, 0x69, 0x70];
+    //let invalid = [0x70];
     //let invalid = [];
     
     let mut address_list = vec![];
@@ -134,19 +130,26 @@ where
             !invalid.contains(f)
         })
         .for_each(|address| {
-            let mut buffer = [0, 0];
-            //let mut buffer = [0; 25];
+            /*
+            log::warn!("going to i2c_write: {address:#X}");
+            let write_result = i2c
+                .write(address as u8, &[])
+                .map_err(WrapError::I2c);
 
-            //let register = 0x00;
-            //let mut cmd = [register];
+            if write_result.is_ok() {
+                address_list.push(address);
+
+                log::warn!("device at {address:#X}");
+            }
+            */
+
+            // /*
+            let mut buffer = [0, 0];
             
             let read_result = i2c
                 .read(
-                //.write_read(
                     address,
-                    //&mut cmd,
                     &mut buffer,
-                    //I2C_TICK_TYPE,
                 )
                 .map_err(WrapError::I2c);
                 
@@ -154,19 +157,8 @@ where
                 address_list.push(address);
 
                 log::warn!("{address:#X} {buffer:?}");
-
-                /*
-                let register = 0x00;
-                let cmd = [register];
-                 //warn!("going to i2c_write");
-                let write_result = i2c
-                    .write(address as u8, &cmd)
-                    //.map_err(grideye::Error::I2c);
-                    .map_err(WrapError::I2c);
-                //log::warn!("i2c_write_result: {write_result:?}");
-                log::warn!("i2c_write_result: ERROR {address:#X}");
-                */
             }
+            // */
         });
 
     if address_list.is_empty() {
