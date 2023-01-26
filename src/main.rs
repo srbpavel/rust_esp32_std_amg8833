@@ -105,10 +105,28 @@ fn main() -> Result<(), WrapError<I2cError>> {
             }
         }
     );
+
+    warn!("i2c_scan_generic");
+    let active_address = i2c::scan_generic(&mut i2c);
+
+    info!(
+        "I2C active address: {:?}",
+        match active_address {
+            Some(active) => {
+                active
+                    .iter()
+                    .map(|a| format!("{a:#X} "))
+                    .collect::<Vec<String>>()
+                    .concat()
+            }
+            None => {
+                String::from("")
+            }
+        }
+    );
     // */
     
     // I2C SHARED
-    // BusManager<NullMutex<I2cDriver<'static>>>
     //let i2c_shared = shared_bus::BusManagerSimple::new(i2c);
     let i2c_shared: &'static _ = shared_bus::new_std!(I2cDriver = i2c).ok_or(WrapError::I2cError)?;
     
