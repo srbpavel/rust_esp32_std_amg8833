@@ -37,6 +37,8 @@ embedded-graphics = "0.7.1"
 
 shared-bus = { version="0.2.5", features = ["std"]}
 
+shtcx = "0.10.0"
+
 [build-dependencies]
 embuild = "0.31"
 anyhow = "1"

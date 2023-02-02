@@ -1,6 +1,7 @@
 mod errors;
 mod i2c;
 mod sensor_agm;
+mod sensor_shtc;
 
 use errors::WrapError;
 
@@ -11,6 +12,7 @@ use esp_idf_sys as _;
 use esp_idf_svc::log::EspLogger;
 use esp_idf_svc::systime::EspSystemTime;
 
+use embedded_hal::blocking::i2c::WriteRead;
 use embedded_hal::blocking::delay::DelayMs;
 // alpha
 //use embedded_hal::delay::DelayUs;
@@ -37,6 +39,10 @@ use embedded_graphics::primitives::Rectangle;
 use embedded_graphics::text::Baseline;
 use embedded_graphics::text::Text;
 
+use std::sync::Arc;
+use std::sync::Mutex;
+use shtcx::shtc3;
+
 use log::error;
 use log::info;
 use log::warn;
@@ -60,6 +66,14 @@ fn main() -> Result<(), WrapError<I2cError>> {
     EspLogger::initialize_default();
 
     info!("### amg8833: array {LEN}x{LEN}");
+
+    /*
+    use esp_idf_hal::gpio::IOPin;
+    let no_pin = Option::<esp_idf_hal::gpio::AnyIOPin>::None;
+    let some_pin = Option::<esp_idf_hal::gpio::AnyIOPin>::Some(
+        unsafe {esp_idf_hal::gpio::Gpio0::new().downgrade()}
+    );
+    */
 
     let machine_boot = EspSystemTime {}.now();
     warn!("machine_uptime: {machine_boot:?}");
@@ -125,6 +139,26 @@ fn main() -> Result<(), WrapError<I2cError>> {
         }
     );
     // */
+
+    // SHTC3 - device_id
+    const I2C_TICK_TYPE: u32 = 100;
+    let address = 0x70;
+    let cmd = [0xEF, 0xC8]; // ReadIdRegister
+    let mut buffer = [0; 3]; 
+    
+    let write_read_result = i2c
+        .write_read(
+            address as u8,
+            &cmd,
+            &mut buffer,
+            I2C_TICK_TYPE,
+        )
+        .map_err(WrapError::WrapI2c);
+    
+    log::info!("SHTC3_i2c -> {address:#X} {buffer:?} / {write_read_result:?}\n {:b} {:b}",
+               buffer[0],
+               buffer[1],
+    );
     
     // I2C SHARED
     //let i2c_shared = shared_bus::BusManagerSimple::new(i2c);
@@ -133,6 +167,8 @@ fn main() -> Result<(), WrapError<I2cError>> {
     let i2c_proxy_1 = i2c_shared.acquire_i2c();
     let i2c_proxy_2 = i2c_shared.acquire_i2c();
 
+    let mut i2c_proxy_4 = i2c_shared.acquire_i2c();
+    
     // /*
     let mut i2c_proxy_3 = i2c_shared.acquire_i2c();
 
@@ -160,6 +196,39 @@ fn main() -> Result<(), WrapError<I2cError>> {
     // GRIDEYE
     let mut grideye = GridEye::new(i2c_proxy_1, delay, Address::Standard);
 
+    // SHTC3
+    // SHTC3 - device_id
+    let address = 0x70;
+    let cmd = [0xEF, 0xC8]; // ReadIdRegister
+    let mut buffer = [0; 3]; 
+
+    let write_read_result = i2c_proxy_4
+        .write_read(
+            address as u8,
+            &cmd,
+            &mut buffer,
+        )
+        .map_err(WrapError::WrapI2c);
+    
+    log::info!("SHTC3_shared -> {address:#X} {buffer:?} / {write_read_result:?}");
+        
+    let shtc_sensor_main = Some(Arc::new(Mutex::new(shtc3(i2c_proxy_4))));
+    let sensor_shtc = shtc_sensor_main.clone();
+    match sensor_shtc::measure(sensor_shtc.clone(), &mut Ets {}, 100) {
+        Some(data) => {
+            let temperature_value = data
+                    .temperature
+                    .as_degrees_celsius();
+            
+            let humidity_value = data
+                .humidity
+                .as_percent();
+
+            warn!("SHTC3: {temperature_value} / {humidity_value}");
+        },
+        None => {},
+    };
+    
     // DISPLAY
     let interface = I2CDisplayInterface::new(i2c_proxy_2);
     let mut display = Ssd1306::new(interface, DisplaySize128x64, DisplayRotation::Rotate0)
@@ -188,6 +257,22 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
     if grideye.power(Power::Wakeup).is_ok() {
         loop {
+            // SHTC3
+            match sensor_shtc::measure(sensor_shtc.clone(), &mut Ets {}, 100) {
+                Some(data) => {
+                    let temperature_value = data
+                        .temperature
+                        .as_degrees_celsius();
+                    
+                    let humidity_value = data
+                        .humidity
+                        .as_percent();
+                    
+                    warn!("SHTC3: {temperature_value} / {humidity_value}");
+                },
+                None => {},
+            };
+
             /*
             let i2c_clone = i2c_proxy_3.clone();
 
