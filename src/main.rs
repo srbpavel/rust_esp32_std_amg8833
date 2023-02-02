@@ -96,10 +96,8 @@ fn main() -> Result<(), WrapError<I2cError>> {
     // I2C type just to see type for error imlp
     let i2c: Result<esp_idf_hal::i2c::I2cDriver<'_>, esp_idf_sys::EspError> =
         i2c::config(peripherals.i2c0, pin_sda, pin_scl);
-
     let mut i2c = i2c?;
 
-    // /*
     // I2C SCAN
     warn!("i2c_scan");
     let active_address = i2c::scan(&mut i2c);
@@ -113,6 +111,8 @@ fn main() -> Result<(), WrapError<I2cError>> {
                     .map(|a| format!("{a:#X} "))
                     .collect::<Vec<String>>()
                     .concat()
+                    .trim()
+                    .to_string()
             }
             None => {
                 String::from("")
@@ -132,46 +132,24 @@ fn main() -> Result<(), WrapError<I2cError>> {
                     .map(|a| format!("{a:#X} "))
                     .collect::<Vec<String>>()
                     .concat()
+                    .trim()
+                    .to_string()
             }
             None => {
                 String::from("")
             }
         }
     );
-    // */
 
-    // SHTC3 - device_id
-    const I2C_TICK_TYPE: u32 = 100;
-    let address = 0x70;
-    let cmd = [0xEF, 0xC8]; // ReadIdRegister
-    let mut buffer = [0; 3]; 
-    
-    let write_read_result = i2c
-        .write_read(
-            address as u8,
-            &cmd,
-            &mut buffer,
-            I2C_TICK_TYPE,
-        )
-        .map_err(WrapError::WrapI2c);
-    
-    log::info!("SHTC3_i2c -> {address:#X} {buffer:?} / {write_read_result:?}\n {:b} {:b}",
-               buffer[0],
-               buffer[1],
-    );
-    
     // I2C SHARED
-    //let i2c_shared = shared_bus::BusManagerSimple::new(i2c);
     let i2c_shared: &'static _ = shared_bus::new_std!(I2cDriver = i2c).ok_or(WrapError::I2cError)?;
     
     let i2c_proxy_1 = i2c_shared.acquire_i2c();
     let i2c_proxy_2 = i2c_shared.acquire_i2c();
-
-    let mut i2c_proxy_4 = i2c_shared.acquire_i2c();
-    
-    // /*
     let mut i2c_proxy_3 = i2c_shared.acquire_i2c();
-
+    let mut i2c_proxy_4 = i2c_shared.acquire_i2c();
+    let i2c_proxy_5 = i2c_shared.acquire_i2c();
+    
     std::thread::spawn(move || {
         warn!("i2c_scan_shared");
         let active_address = i2c::scan_shared(&mut i2c_proxy_3);
@@ -191,17 +169,14 @@ fn main() -> Result<(), WrapError<I2cError>> {
             }
         );
     });
-    // */
 
     // GRIDEYE
     let mut grideye = GridEye::new(i2c_proxy_1, delay, Address::Standard);
 
     // SHTC3
-    // SHTC3 - device_id
     let address = 0x70;
     let cmd = [0xEF, 0xC8]; // ReadIdRegister
     let mut buffer = [0; 3]; 
-
     let write_read_result = i2c_proxy_4
         .write_read(
             address as u8,
@@ -214,20 +189,17 @@ fn main() -> Result<(), WrapError<I2cError>> {
         
     let shtc_sensor_main = Some(Arc::new(Mutex::new(shtc3(i2c_proxy_4))));
     let sensor_shtc = shtc_sensor_main.clone();
-    match sensor_shtc::measure(sensor_shtc.clone(), &mut Ets {}, 100) {
-        Some(data) => {
-            let temperature_value = data
+    if let Some(data) = sensor_shtc::measure(sensor_shtc.clone(), &mut Ets {}, 100) {
+                let temperature_value = data
                     .temperature
                     .as_degrees_celsius();
-            
-            let humidity_value = data
-                .humidity
-                .as_percent();
-
-            warn!("SHTC3: {temperature_value} / {humidity_value}");
-        },
-        None => {},
-    };
+                
+                let humidity_value = data
+                    .humidity
+                    .as_percent();
+                
+                warn!("SHTC3: {temperature_value} / {humidity_value}");
+            };
     
     // DISPLAY
     let interface = I2CDisplayInterface::new(i2c_proxy_2);
@@ -258,30 +230,25 @@ fn main() -> Result<(), WrapError<I2cError>> {
     if grideye.power(Power::Wakeup).is_ok() {
         loop {
             // SHTC3
-            match sensor_shtc::measure(sensor_shtc.clone(), &mut Ets {}, 100) {
-                Some(data) => {
-                    let temperature_value = data
-                        .temperature
-                        .as_degrees_celsius();
-                    
-                    let humidity_value = data
-                        .humidity
-                        .as_percent();
-                    
-                    warn!("SHTC3: {temperature_value} / {humidity_value}");
-                },
-                None => {},
+            if let Some(data) = sensor_shtc::measure(sensor_shtc.clone(), &mut Ets {}, 100) {
+                let temperature_value = data
+                    .temperature
+                    .as_degrees_celsius();
+                
+                let humidity_value = data
+                    .humidity
+                    .as_percent();
+                
+                warn!("SHTC3: {temperature_value} / {humidity_value}");
             };
 
-            /*
-            let i2c_clone = i2c_proxy_3.clone();
-
+            let mut i2c_clone = i2c_proxy_5.clone();
             std::thread::spawn(move || {
                 warn!("i2c_scan_shared_loop + thread");
-                let active_address = i2c::scan_shared(i2c_clone);
+                let active_address = i2c::scan_shared(&mut i2c_clone);
 
                 info!(
-                    "I2C active address: {:?}",
+                    "I2C LOOP active address: {:?}",
                     match active_address {
                         Some(active) => {
                             active
@@ -296,28 +263,6 @@ fn main() -> Result<(), WrapError<I2cError>> {
                     }
                 );
             });
-            */
-            
-            /*
-            // I2C scan LOOP
-            let active_address = i2c::_scan_shared(i2c_proxy_3);
-
-            info!(
-                "I2C active address: {:?}",
-                match active_address {
-                    Some(active) => {
-                        active
-                            .iter()
-                            .map(|a| format!("{a:#X} "))
-                            .collect::<Vec<String>>()
-                            .concat()
-                    }
-                    None => {
-                        String::from("")
-                    }
-                }
-            );
-            */
 
             cycle_counter += 1;
 
@@ -396,36 +341,6 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
             // DISPLAY
             info!("heat_map_display:\n\n{heat_map}");
-
-            /*
-            (0..(LEN * LEN) as u8)
-                .into_iter()
-                .for_each(|index| {
-                    let temp =
-                        match grideye.get_pixel_temperature_celsius(index) {
-                            Ok(pixel_temp) => pixel_temp,
-                            Err(e) => {
-                                error!("Error reading pixel index: {index} temperature: {e:?}");
-
-                                TEMPERATURE_ERROR_VALUE
-                            }
-                        };
-
-                    grid_raw[index as usize] = temp;
-
-                });
-            */
-
-            /*
-            let grid_base = grid_raw.chunks(LEN);
-            println!("grid_base: {:?}\n", grid_base);
-
-            let grid_vec: Vec<_> = grid_base.collect();
-            println!("grid_vec: {:?\n}", grid_vec);
-
-            let grid_slice: &[&[f32]] = grid_vec.as_slice();
-            println!("grid_slice: {:?}", grid_slice);
-            */
 
             display.clear();
 
