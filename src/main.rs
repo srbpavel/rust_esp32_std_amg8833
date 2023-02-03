@@ -13,7 +13,7 @@ use esp_idf_sys as _;
 use esp_idf_svc::log::EspLogger;
 use esp_idf_svc::systime::EspSystemTime;
 
-use embedded_hal::blocking::i2c::WriteRead;
+//use embedded_hal::blocking::i2c::WriteRead;
 use embedded_hal::blocking::delay::DelayMs;
 
 use esp_idf_hal::delay::Ets;
@@ -51,29 +51,12 @@ use log::warn;
 
 const SLEEP_DURATION: u16 = 30 * 1000;
 
-/*
-use esp_idf_hal::gpio::AnyIOPin;
-use esp_idf_hal::gpio::Gpio0;
-use esp_idf_hal::gpio::IOPin;
-const NO_PIN: Option<AnyIOPin> = None;
-const ANY_PIN: Option<AnyIOPin> = Some(unsafe { Gpio0::new().into() });
-//const ANY_PIN: Option<AnyIOPin> = Some(unsafe {Gpio0::new().downgrade()});
-*/
-
 //
 fn main() -> Result<(), WrapError<I2cError>> {
     esp_idf_sys::link_patches();
     EspLogger::initialize_default();
 
     info!("### amg8833: array {LEN}x{LEN}");
-
-    /*
-    use esp_idf_hal::gpio::IOPin;
-    let no_pin = Option::<esp_idf_hal::gpio::AnyIOPin>::None;
-    let some_pin = Option::<esp_idf_hal::gpio::AnyIOPin>::Some(
-        unsafe {esp_idf_hal::gpio::Gpio0::new().downgrade()}
-    );
-    */
 
     let machine_boot = EspSystemTime {}.now();
     warn!("machine_uptime: {machine_boot:?}");
@@ -138,11 +121,11 @@ fn main() -> Result<(), WrapError<I2cError>> {
     // I2C SHARED
     let i2c_shared: &'static _ = shared_bus::new_std!(I2cDriver = i2c).ok_or(WrapError::I2cError)?;
     
-    let i2c_proxy_1 = i2c_shared.acquire_i2c();
-    let i2c_proxy_2 = i2c_shared.acquire_i2c();
-    let mut i2c_proxy_3 = i2c_shared.acquire_i2c();
-    let mut i2c_proxy_4 = i2c_shared.acquire_i2c();
-    let i2c_proxy_5 = i2c_shared.acquire_i2c();
+    let i2c_proxy_1 = i2c_shared.acquire_i2c(); // agm
+    let i2c_proxy_2 = i2c_shared.acquire_i2c(); // ssd1306
+    let mut i2c_proxy_3 = i2c_shared.acquire_i2c(); // i2c scan share
+    let i2c_proxy_4 = i2c_shared.acquire_i2c(); // shtc3
+    let i2c_proxy_5 = i2c_shared.acquire_i2c(); // i2c scan share loop
     
     std::thread::spawn(move || {
         warn!("i2c_scan_shared");
@@ -165,6 +148,9 @@ fn main() -> Result<(), WrapError<I2cError>> {
     });
 
     // SHTC3
+    let shtc_sensor_main = Some(Arc::new(Mutex::new(shtc3(i2c_proxy_4))));
+    let sensor_shtc = shtc_sensor_main.clone();
+    /*
     let address = 0x70;
     let cmd = [0xEF, 0xC8]; // ReadIdRegister
     let mut buffer = [0; 3]; 
@@ -178,8 +164,6 @@ fn main() -> Result<(), WrapError<I2cError>> {
     
     log::info!("SHTC3_shared -> {address:#X} {buffer:?} / {write_read_result:?}");
         
-    let shtc_sensor_main = Some(Arc::new(Mutex::new(shtc3(i2c_proxy_4))));
-    let sensor_shtc = shtc_sensor_main.clone();
     if let Some(data) = sensor_shtc::measure(sensor_shtc.clone(), &mut Ets {}, 100) {
                 let temperature_value = data
                     .temperature
@@ -191,6 +175,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
                 
                 warn!("SHTC3: {temperature_value} / {humidity_value}");
             };
+    */
 
     // GRIDEYE
     let mut grideye = GridEye::new(i2c_proxy_1, delay, Address::Standard);
@@ -277,26 +262,12 @@ fn main() -> Result<(), WrapError<I2cError>> {
                 warn!("framerate: Fps{}", WrapFramerate(framerate));
             }
 
-            //pub const SQRT: usize = 64;
-            
             let (grid_raw, min_temperature, max_temperature): ([f32; LEN * LEN], f32, f32) = sensor_agm::measure(&mut grideye);
-            //let (grid_raw, min_temperature, max_temperature): ([f32; SQRT], f32, f32) = sensor_agm::measure(&mut grideye);
 
             // via trait
-            //let heat_map = sensor_agm::HeatMap::from(grid_raw);
-            //let heat_map = sensor_agm::HeatMap::from_n(grid_raw);
             let heat_map: sensor_agm::HeatMap<f32, LEN> = sensor_agm::HeatMap::from(grid_raw);
-
             // via fn
-            //let heat_map = sensor_agm::array_to_map(grid_raw);
-            /*
-            //pub const LEN8: usize = 8;
-            //let heat_map: sensor_agm::HeatMap<f32, 8> =
-            //    sensor_agm::array_to_map_with_len(grid_raw, 8);
-            let heat_map: sensor_agm::HeatMap<f32, LEN> =
-                //sensor_agm::array_to_map_with_len(grid_raw, LEN);
-                sensor_agm::array_to_map_with_len(grid_raw);
-            */
+            let _heat_map: sensor_agm::HeatMap<f32, LEN> = sensor_agm::array_to_map(grid_raw);
 
             // DEBUG
             //info!("debug: {heat_map:?}");
