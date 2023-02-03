@@ -5,6 +5,7 @@ mod sensor_agm;
 use errors::WrapError;
 
 use sensor_agm::LEN;
+use sensor_agm::HeatMap;
 
 use esp_idf_sys as _;
 
@@ -74,8 +75,6 @@ fn main() -> Result<(), WrapError<I2cError>> {
     
     let i2c_proxy_1 = i2c_shared.acquire_i2c(); // agm
     let i2c_proxy_2 = i2c_shared.acquire_i2c(); // ssd1306
-    //let mut i2c_proxy_3 = i2c_shared.acquire_i2c(); // i2c scan share
-    //let i2c_proxy_4 = i2c_shared.acquire_i2c(); // shtc3
     let i2c_proxy_5 = i2c_shared.acquire_i2c(); // i2c scan share loop
     
     // GRIDEYE
@@ -135,13 +134,10 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
             let (grid_raw, min_temperature, max_temperature): ([f32; LEN * LEN], f32, f32) = sensor_agm::measure(&mut grideye);
 
-            // via From
-            //let heat_map: sensor_agm::HeatMap<f32, LEN> = sensor_agm::HeatMap::from(grid_raw);
             // via Try_From
-            //let heat_map: Result<sensor_agm::HeatMap<f32, LEN>, std::convert::Infallible> = sensor_agm::HeatMap::try_from(grid_raw);
-            //let heat_map: Result<sensor_agm::HeatMap<f32, LEN>, &'static String> = sensor_agm::HeatMap::try_from(grid_raw);
-            let heat_map: Result<sensor_agm::HeatMap<f32, LEN>, &'static str> = sensor_agm::HeatMap::try_from(grid_raw);
+            let heat_map: Result<HeatMap<f32, LEN>, &'static str> = HeatMap::try_from(grid_raw);
 
+            /* // move to tests
             let fucked_array = [0_f32, 1_f32, 2_f32];
             let fucked_map: Result<sensor_agm::HeatMap<f32, LEN>, &'static str> = sensor_agm::HeatMap::try_from(fucked_array);
 
@@ -151,10 +147,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
                    fucked_array.len(),
                    (fucked_array.len() as f32).sqrt(),
             );
-            
-            // via Try_Into
-            //let heat_map: Result<sensor_agm::HeatMap<f32, LEN>, std::convert::Infallible> = grid_raw.try_into();
-            //let heat_map: Result<sensor_agm::HeatMap<f32, LEN>, &'static String> = grid_raw.try_into();
+            */
 
             match heat_map {
                 Ok(m) => {

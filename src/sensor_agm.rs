@@ -88,53 +88,27 @@ where
     }
 }
 
-/* // From and TryFrom cannot be impl at same time !!!
-//  
-impl<const N: usize, const L: usize> From<[f32; N]> for HeatMap<f32, L> {
-    fn from(array: [f32; N]) -> Self {
-        let mut heat_map = HeatMap::<f32, L>([[0f32; L]; L]);
-        let mut index = 0;
-
-        let len = (array.len() as f32).sqrt() as usize;
-        
-        (0..len as u8).into_iter().for_each(|x| {
-            (0..len as u8).into_iter().for_each(|y| {
-                heat_map.0[x as usize][y as usize] = array[index];
-                
-                index += 1;
-            })
-        });
-        
-        heat_map
-    }
-}
-*/
-
 //
-//impl<const N: usize, const L: usize> TryFrom<[f32; N]> for HeatMap<f32, L> {
 impl<const N: usize, const L: usize> TryFrom<[f32; N]> for HeatMap<f32, L> {
-    //type Error = &'static String;
     type Error = &'static str;
-    //type Error = std::convert::Infallible;
     
     fn try_from(array: [f32; N]) -> Result<Self, Self::Error> {
         let mut heat_map = HeatMap::<f32, L>([[TEMPERATURE_ERROR_VALUE; L]; L]);
         let mut index = 0;
 
-        //let len = (array.len() as f32).sqrt() as usize;
         let sqrt = (array.len() as f32).sqrt();
-        let len = if !sqrt.eq(&sqrt.floor()) {
-            return Err("error try_from 1d array not square")
-        } else {
+        let len = if sqrt.eq(&sqrt.floor()) {
             sqrt as usize
+        } else {
+            return Err("error try_from 1d array not square")
         };
         
         (0..len as u8).into_iter().for_each(|x| {
             (0..len as u8).into_iter().for_each(|y| {
-                if let Some(i) = array.get(index) {
+                if let Some(pixel) = array.get(index) {
                     if let Some(x_row) = heat_map.0.get(x as usize) {
                         if x_row.get(y as usize).is_some() {
-                            heat_map.0[x as usize][y as usize] = *i;
+                            heat_map.0[x as usize][y as usize] = *pixel;
                         }
                     }
                 }
@@ -146,18 +120,6 @@ impl<const N: usize, const L: usize> TryFrom<[f32; N]> for HeatMap<f32, L> {
         Ok(heat_map)
     }
 }
-/*
-impl<const T: usize,U> TryFrom<U> for HeatMap<f32, T>
-where
-    U: Into<HeatMap<f32, T>>,
-{
-    type Error = &'static str;
-
-    fn try_from(array: U) -> Result<Self, Self::Error> {
-        Err("try_from_err")
-    }
-}
-*/
 
 //
 pub fn measure<I2C, D, E>(grideye: &mut GridEye<I2C, D>) -> ([f32; LEN * LEN], f32, f32)
@@ -166,7 +128,7 @@ where
     D: DelayMs<u8>,
     E: Debug,
 {
-    let mut grid_raw = [0_f32; LEN * LEN];
+    let mut grid_raw = [TEMPERATURE_ERROR_VALUE; LEN * LEN];
     let mut max_temperature = -55.;
     let mut min_temperature = 125.;
     
@@ -189,19 +151,3 @@ where
     (grid_raw, min_temperature ,max_temperature)
 }
 
-#[allow(unused)]
-pub fn array_to_map<const N: usize, const L: usize>(array: [f32; N]) -> HeatMap<f32, L> {
-    let len = (array.len() as f32).sqrt() as usize;
-    
-    let mut heat_map = HeatMap::<f32, L>([[0_f32; L]; L]);
-    let mut index = 0;
-    
-    (0..len as u8).into_iter().for_each(|x| {
-        (0..len as u8).into_iter().for_each(|y| {
-            heat_map.0[x as usize][y as usize] = array[index];
-            index += 1;
-        })
-    });
-    
-    heat_map
-}
