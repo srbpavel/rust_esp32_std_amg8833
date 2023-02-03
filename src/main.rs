@@ -135,16 +135,41 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
             let (grid_raw, min_temperature, max_temperature): ([f32; LEN * LEN], f32, f32) = sensor_agm::measure(&mut grideye);
 
-            // via trait
-            let heat_map: sensor_agm::HeatMap<f32, LEN> = sensor_agm::HeatMap::from(grid_raw);
-            // via fn
-            //let heat_map: sensor_agm::HeatMap<f32, LEN> = sensor_agm::array_to_map(grid_raw);
+            // via From
+            //let heat_map: sensor_agm::HeatMap<f32, LEN> = sensor_agm::HeatMap::from(grid_raw);
+            // via Try_From
+            //let heat_map: Result<sensor_agm::HeatMap<f32, LEN>, std::convert::Infallible> = sensor_agm::HeatMap::try_from(grid_raw);
+            //let heat_map: Result<sensor_agm::HeatMap<f32, LEN>, &'static String> = sensor_agm::HeatMap::try_from(grid_raw);
+            let heat_map: Result<sensor_agm::HeatMap<f32, LEN>, &'static str> = sensor_agm::HeatMap::try_from(grid_raw);
+
+            let fucked_array = [0_f32, 1_f32, 2_f32];
+            let fucked_map: Result<sensor_agm::HeatMap<f32, LEN>, &'static str> = sensor_agm::HeatMap::try_from(fucked_array);
+
+            // DEBUG
+            error!("fucked_map: {fucked_map:?} >>> {:?} {} {}",
+                   fucked_array,
+                   fucked_array.len(),
+                   (fucked_array.len() as f32).sqrt(),
+            );
+            
+            // via Try_Into
+            //let heat_map: Result<sensor_agm::HeatMap<f32, LEN>, std::convert::Infallible> = grid_raw.try_into();
+            //let heat_map: Result<sensor_agm::HeatMap<f32, LEN>, &'static String> = grid_raw.try_into();
+
+            match heat_map {
+                Ok(m) => {
+                    info!("heat_map_display:\n\n{m}");
+                },
+                Err(e) => {
+                    error!("array to heat_map failed >>> {e}");
+                },
+            }
 
             // DEBUG
             //info!("debug: {heat_map:?}");
 
             // DISPLAY
-            info!("heat_map_display:\n\n{heat_map}");
+            //info!("heat_map_display:\n\n{heat_map}");
 
             let mut grid_indexed = grid_raw
                 .iter()
