@@ -5,7 +5,8 @@ mod sensor_shtc;
 
 use errors::WrapError;
 
-use sensor_agm::FramerateWrap;
+use sensor_agm::WrapFramerate;
+use sensor_agm::LEN;
 
 use esp_idf_sys as _;
 
@@ -14,8 +15,6 @@ use esp_idf_svc::systime::EspSystemTime;
 
 use embedded_hal::blocking::i2c::WriteRead;
 use embedded_hal::blocking::delay::DelayMs;
-// alpha
-//use embedded_hal::delay::DelayUs;
 
 use esp_idf_hal::delay::Ets;
 use esp_idf_hal::delay::FreeRtos;
@@ -43,13 +42,14 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use shtcx::shtc3;
 
+#[allow(unused_imports)]
 use log::error;
+#[allow(unused_imports)]
 use log::info;
+#[allow(unused_imports)]
 use log::warn;
 
 const SLEEP_DURATION: u16 = 30 * 1000;
-const TEMPERATURE_ERROR_VALUE: f32 = 85.0;
-const LEN: usize = 8; // array column/row size
 
 /*
 use esp_idf_hal::gpio::AnyIOPin;
@@ -101,18 +101,15 @@ fn main() -> Result<(), WrapError<I2cError>> {
     // I2C SCAN
     warn!("i2c_scan");
     let active_address = i2c::scan(&mut i2c);
-
     info!(
         "I2C active address: {:?}",
         match active_address {
             Some(active) => {
                 active
                     .iter()
-                    .map(|a| format!("{a:#X} "))
+                    .map(|a| format!("{a:#X}"))
                     .collect::<Vec<String>>()
-                    .concat()
-                    .trim()
-                    .to_string()
+                    .join(" ")
             }
             None => {
                 String::from("")
@@ -122,18 +119,15 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
     warn!("i2c_scan_generic");
     let active_address = i2c::scan_generic(&mut i2c);
-
     info!(
         "I2C active address: {:?}",
         match active_address {
             Some(active) => {
                 active
                     .iter()
-                    .map(|a| format!("{a:#X} "))
+                    .map(|a| format!("{a:#X}"))
                     .collect::<Vec<String>>()
-                    .concat()
-                    .trim()
-                    .to_string()
+                    .join(" ")
             }
             None => {
                 String::from("")
@@ -161,7 +155,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
                         .iter()
                         .map(|a| format!("{a:#X} "))
                         .collect::<Vec<String>>()
-                        .concat()
+                        .join(" ")
                 }
                 None => {
                     String::from("")
@@ -169,9 +163,6 @@ fn main() -> Result<(), WrapError<I2cError>> {
             }
         );
     });
-
-    // GRIDEYE
-    let mut grideye = GridEye::new(i2c_proxy_1, delay, Address::Standard);
 
     // SHTC3
     let address = 0x70;
@@ -183,7 +174,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
             &cmd,
             &mut buffer,
         )
-        .map_err(WrapError::WrapI2c);
+        .map_err(WrapError::I2c);
     
     log::info!("SHTC3_shared -> {address:#X} {buffer:?} / {write_read_result:?}");
         
@@ -200,6 +191,9 @@ fn main() -> Result<(), WrapError<I2cError>> {
                 
                 warn!("SHTC3: {temperature_value} / {humidity_value}");
             };
+
+    // GRIDEYE
+    let mut grideye = GridEye::new(i2c_proxy_1, delay, Address::Standard);
     
     // DISPLAY
     let interface = I2CDisplayInterface::new(i2c_proxy_2);
@@ -224,8 +218,6 @@ fn main() -> Result<(), WrapError<I2cError>> {
     display.flush()?;
 
     sleep.delay_ms(SLEEP_DURATION / 10);
-    // alpha
-    //let _ = sleep.delay_ms((SLEEP_DURATION / 10).into());
 
     if grideye.power(Power::Wakeup).is_ok() {
         loop {
@@ -242,6 +234,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
                 warn!("SHTC3: {temperature_value} / {humidity_value}");
             };
 
+            // I2C LOOP scan 
             let mut i2c_clone = i2c_proxy_5.clone();
             std::thread::spawn(move || {
                 warn!("i2c_scan_shared_loop + thread");
@@ -264,6 +257,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
                 );
             });
 
+            // GRIDEYE
             cycle_counter += 1;
 
             // just to see type for error imlp
@@ -280,68 +274,52 @@ fn main() -> Result<(), WrapError<I2cError>> {
             );
 
             if let Ok(framerate) = grideye.get_framerate() {
-                warn!("framerate: Fps{}", FramerateWrap(framerate));
+                warn!("framerate: Fps{}", WrapFramerate(framerate));
             }
 
-            // 64 63 62 61 60 59 58 57
-            // 56 55 54 53 52 51 50 49
-            // 48 47 46 45 44 43 42 41
-            // 40 39 38 37 36 35 34 33
-            // 32 31 30 29 28 27 26 25
-            // 24 23 22 21 20 19 18 17
-            // 16 15 14 13 12 11 10  9
-            //  8  7  6  5  4  3  2  1
+            //pub const SQRT: usize = 64;
+            
+            let (grid_raw, min_temperature, max_temperature): ([f32; LEN * LEN], f32, f32) = sensor_agm::measure(&mut grideye);
+            //let (grid_raw, min_temperature, max_temperature): ([f32; SQRT], f32, f32) = sensor_agm::measure(&mut grideye);
 
-            // /*
-            let mut heat_map = sensor_agm::HeatMap([[0.0; LEN]; LEN]);
+            // via trait
+            //let heat_map = sensor_agm::HeatMap::from(grid_raw);
+            //let heat_map = sensor_agm::HeatMap::from_n(grid_raw);
+            let heat_map: sensor_agm::HeatMap<f32, LEN> = sensor_agm::HeatMap::from(grid_raw);
 
-            info!("array occupies {} bytes", std::mem::size_of_val(&heat_map));
+            // via fn
+            //let heat_map = sensor_agm::array_to_map(grid_raw);
+            /*
+            //pub const LEN8: usize = 8;
+            //let heat_map: sensor_agm::HeatMap<f32, 8> =
+            //    sensor_agm::array_to_map_with_len(grid_raw, 8);
+            let heat_map: sensor_agm::HeatMap<f32, LEN> =
+                //sensor_agm::array_to_map_with_len(grid_raw, LEN);
+                sensor_agm::array_to_map_with_len(grid_raw);
+            */
 
-            // base 1d array
-            let mut grid_raw = [0.0; LEN * LEN];
-            let mut max_temperature = -55.;
-            let mut min_temperature = 125.;
-
-            let mut pixel_index = 0;
-
-            (0..LEN as u8).into_iter().for_each(|x| {
-                (0..LEN as u8).into_iter().for_each(|y| {
-                    let pixel = (x * LEN as u8) + y;
-
-                    if x.eq(&0) && y.eq(&0) {
-                        warn!("status: {:?}", grideye.pixel_temperature_out_ok());
-                    }
-
-                    // we don't want to fall only beause a single pixel error
-                    let temp = match grideye.get_pixel_temperature_celsius(pixel) {
-                        Ok(pixel_temp) => pixel_temp,
-                        Err(e) => {
-                            error!("Error reading pixel x: {x} y: {y} temperature: {e:?}");
-
-                            TEMPERATURE_ERROR_VALUE
-                        }
-                    };
-
-                    heat_map.0[x as usize][y as usize] = temp;
-
-                    grid_raw[pixel_index as usize] = temp;
-                    pixel_index += 1;
-
-                    if temp > max_temperature {
-                        max_temperature = temp
-                    }
-                    if temp < min_temperature {
-                        min_temperature = temp
-                    }
-                })
-            });
-            // */
             // DEBUG
             //info!("debug: {heat_map:?}");
 
             // DISPLAY
             info!("heat_map_display:\n\n{heat_map}");
 
+            // DEBUG
+            //info!("grid_raw: {grid_raw:?}");
+
+            let mut grid_indexed = grid_raw
+                .iter()
+                .enumerate()
+                .map(|(index, item)| {
+                    format!("{index:02}:{item:02.02}")
+                })
+                .collect::<Vec<_>>();
+
+            grid_indexed.reverse();
+            
+            info!("grid_indexed: {grid_indexed:?}");
+            
+            // SSD1306
             display.clear();
 
             Text::with_baseline(
@@ -398,8 +376,6 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
             info!("chrrr...\n");
             sleep.delay_ms(SLEEP_DURATION);
-            // alpha
-            //let _ = sleep.delay_ms((SLEEP_DURATION).into());
         }
     }
 

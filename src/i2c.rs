@@ -18,6 +18,7 @@ use embedded_hal::blocking::i2c::WriteRead;
 
 // 0x3C ssd1306 default
 // 0x3D ssd1306 alternate
+// 0x69 imu_gyro standard
 // 0x69 grideye standard
 // 0x68 grideye alternate
 // 0x70 shtc3
@@ -79,7 +80,7 @@ pub fn scan(i2c: &mut I2cDriver<'_>) -> Option<Vec<u8>> {
                     &mut buffer,
                     I2C_TICK_TYPE,
                 )
-                .map_err(WrapError::WrapI2c);
+                .map_err(WrapError::I2c);
                 
             if read_result.is_ok() {
                 address_list.push(address);
@@ -103,7 +104,6 @@ where
 {
     let mut address_list = vec![];
 
-    log::error!("CMD: {CMD:?}");
     log::error!("INVALID_LIST: {:?}",
                 INVALID.iter().map(|a| format!("{a:#X} ")).collect::<Vec<String>>().concat());
     
@@ -113,15 +113,14 @@ where
             !INVALID.contains(f)                  // so we filter invalid
         } else { true })                          // not filtering so we pass all
         .for_each(|address| {
-            let mut buffer = [0; 3]; 
+            let mut buffer = [0; 2]; 
 
-            //log::error!("write_read: {address:X?}");
             let write_read_result = i2c
                 .write_read(
                     address,
                     &CMD,
                     &mut buffer)
-                .map_err(WrapError::WrapI2c);
+                .map_err(WrapError::I2c);
 
             if write_read_result.is_ok() {
                 address_list.push(address);
@@ -145,25 +144,20 @@ where
 {
     let mut address_list = vec![];
     
-    log::error!("CMD: {CMD:?}");
-    log::error!("INVALID_LIST: {}",
-                INVALID.iter().map(|a| format!("{a:#X} ")).collect::<Vec<String>>().concat());
-    
     (START..END)
         .into_iter()
         .filter(|f| if FILTER_INVALID.eq(&true) {
             !INVALID.contains(f)
         } else { true })
         .for_each(|address| {
-            let mut buffer = [0; 5]; 
-
-            //log::error!("write_read SHARED: {address:X?}");
+            let mut buffer = [0; 2]; 
+            
             let write_read_result = i2c
                 .write_read(
                     address,
                     &CMD,
                     &mut buffer)
-                .map_err(WrapError::WrapI2c);
+                .map_err(WrapError::I2c);
             
             if write_read_result.is_ok() {
                 address_list.push(address);
