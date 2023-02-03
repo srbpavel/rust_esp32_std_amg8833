@@ -67,6 +67,7 @@ where
 }
 
 //
+#[allow(unused)]
 pub fn scan(i2c: &mut I2cDriver<'_>) -> Option<Vec<u8>> {
     let mut address_list = vec![];
 
