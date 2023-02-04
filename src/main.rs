@@ -6,6 +6,7 @@ use errors::WrapError;
 
 use sensor_agm::LEN;
 use sensor_agm::HeatMap;
+use sensor_agm::Temperature;
 
 use esp_idf_sys as _;
 
@@ -132,10 +133,10 @@ fn main() -> Result<(), WrapError<I2cError>> {
             // GRIDEYE
             cycle_counter += 1;
 
-            let (grid_raw, min_temperature, max_temperature): ([f32; LEN * LEN], f32, f32) = sensor_agm::measure(&mut grideye);
+            let (grid_raw, min_temperature, max_temperature): ([Temperature; LEN * LEN], Temperature, Temperature) = sensor_agm::measure(&mut grideye);
 
             // via Try_From
-            let heat_map: Result<HeatMap<f32, LEN>, &'static str> = HeatMap::try_from(grid_raw);
+            let heat_map: Result<HeatMap<Temperature, LEN>, &'static str> = HeatMap::try_from(grid_raw);
 
             /* // move to tests
             let fucked_array = [0_f32, 1_f32, 2_f32];

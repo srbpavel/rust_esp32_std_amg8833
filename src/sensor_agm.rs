@@ -40,6 +40,8 @@ impl Display for WrapFramerate {
     }
 }
 
+pub type Temperature = f32;
+
 type HeatArray<T, const N: usize> = [[T; N]; N];
 
 #[derive(Debug, PartialEq)]
@@ -91,11 +93,11 @@ where
 }
 
 //
-impl<const N: usize, const L: usize> TryFrom<[f32; N]> for HeatMap<f32, L> {
+impl<const N: usize, const L: usize> TryFrom<[Temperature; N]> for HeatMap<Temperature, L> {
     type Error = &'static str;
     
-    fn try_from(array: [f32; N]) -> Result<Self, Self::Error> {
-        let mut heat_map = HeatMap::<f32, L>([[TEMPERATURE_ERROR_VALUE; L]; L]);
+    fn try_from(array: [Temperature; N]) -> Result<Self, Self::Error> {
+        let mut heat_map = HeatMap::<Temperature, L>([[TEMPERATURE_ERROR_VALUE; L]; L]);
         let mut index = 0;
 
         let sqrt = (array.len() as f32).sqrt();
@@ -124,7 +126,7 @@ impl<const N: usize, const L: usize> TryFrom<[f32; N]> for HeatMap<f32, L> {
 }
 
 //
-pub fn measure<I2C, D, E>(grideye: &mut GridEye<I2C, D>) -> ([f32; LEN * LEN], f32, f32)
+pub fn measure<I2C, D, E>(grideye: &mut GridEye<I2C, D>) -> ([Temperature; LEN * LEN], Temperature, Temperature)
 where
     I2C: Read<Error = E> + Write<Error = E> + WriteRead<Error = E>,
     D: DelayMs<u8>,
