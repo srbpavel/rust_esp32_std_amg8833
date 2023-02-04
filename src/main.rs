@@ -231,3 +231,21 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
     Ok(())
 }
+
+/* // will go to client cli/tui
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn array_to_squate_valid() {
+        let array = [0_f32; LEN * LEN];
+        let square: Result<HeatMap<f32, LEN>, &'static str> =
+            HeatMap::try_from(array);
+        
+        assert_eq!(square.unwrap(),
+                   HeatMap([[0_f32; LEN]; LEN]),
+        );
+    }
+}
+*/

@@ -20,7 +20,9 @@ use log::info;
 #[allow(unused_imports)]
 use log::warn;
 
-const TEMPERATURE_ERROR_VALUE: f32 = 85.0;
+const TEMPERATURE_ERROR_VALUE: f32 = 85_f32;
+const MAX_TEMPERATURE: f32 = -55_f32;
+const MIN_TEMPERATURE: f32 = 125_f32;
 pub const LEN: usize = 8; // array column/row size
 
 pub struct WrapFramerate(pub Framerate);
@@ -40,7 +42,7 @@ impl Display for WrapFramerate {
 
 type HeatArray<T, const N: usize> = [[T; N]; N];
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct HeatMap<T, const N: usize>(pub HeatArray<T, N>);
 
 impl<T, const N: usize> ops::Deref for HeatMap<T, N> {
@@ -100,7 +102,7 @@ impl<const N: usize, const L: usize> TryFrom<[f32; N]> for HeatMap<f32, L> {
         let len = if sqrt.eq(&sqrt.floor()) {
             sqrt as usize
         } else {
-            return Err("error try_from 1d array not square")
+            return Err("error try_from 1d array to square")
         };
         
         (0..len as u8).into_iter().for_each(|x| {
@@ -129,23 +131,18 @@ where
     E: Debug,
 {
     let mut grid_raw = [TEMPERATURE_ERROR_VALUE; LEN * LEN];
-    let mut max_temperature = -55.;
-    let mut min_temperature = 125.;
+    let mut max_temperature = MAX_TEMPERATURE;
+    let mut min_temperature = MIN_TEMPERATURE;
     
     (0..(LEN*LEN) as u8).into_iter().for_each(|pixel_index| {
-        let temp = match grideye.get_pixel_temperature_celsius(pixel_index) {
-            Ok(pixel_temp) => pixel_temp,
-            Err(e) => {
-                error!("Error reading pixel: {pixel_index} temperature: {e:?}");
-                
-                TEMPERATURE_ERROR_VALUE
+        if let Ok(pixel_temp) = grideye.get_pixel_temperature_celsius(pixel_index) {
+            if let Some(pixel) = grid_raw.get_mut(pixel_index as usize) {
+                *pixel = pixel_temp;
             }
-        };
-        
-        grid_raw[pixel_index as usize] = temp;
-        
-        if temp > max_temperature { max_temperature = temp }
-        if temp < min_temperature { min_temperature = temp }
+
+            if pixel_temp > max_temperature { max_temperature = pixel_temp }
+            if pixel_temp < min_temperature { min_temperature = pixel_temp }
+        }
     });
 
     (grid_raw, min_temperature ,max_temperature)
