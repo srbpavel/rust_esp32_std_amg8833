@@ -5,6 +5,8 @@ mod sensor_agm;
 use errors::WrapError;
 
 use sensor_agm::LEN;
+use sensor_agm::POW;
+
 use sensor_agm::HeatMap;
 use sensor_agm::Temperature;
 
@@ -36,6 +38,8 @@ use embedded_graphics::primitives::PrimitiveStyleBuilder;
 use embedded_graphics::primitives::Rectangle;
 use embedded_graphics::text::Baseline;
 use embedded_graphics::text::Text;
+
+use std::time::Instant;
 
 #[allow(unused_imports)]
 use log::error;
@@ -133,14 +137,17 @@ fn main() -> Result<(), WrapError<I2cError>> {
             // GRIDEYE
             cycle_counter += 1;
 
-            let (grid_raw, min_temperature, max_temperature): ([Temperature; LEN * LEN], Temperature, Temperature) = sensor_agm::measure(&mut grideye);
+            let start = Instant::now();
+            let (grid_raw, min_temperature, max_temperature): ([Temperature; POW], Temperature, Temperature) = sensor_agm::measure(&mut grideye);
+            let stop = Instant::now();
+            warn!("measure durration: {:?}", stop.duration_since(start));
 
             // via Try_From
             let heat_map: Result<HeatMap<Temperature, LEN>, &'static str> = HeatMap::try_from(grid_raw);
 
-            /* // move to tests
+            // /* // move to tests
             let fucked_array = [0_f32, 1_f32, 2_f32];
-            let fucked_map: Result<sensor_agm::HeatMap<f32, LEN>, &'static str> = sensor_agm::HeatMap::try_from(fucked_array);
+            let fucked_map: Result<HeatMap<f32, LEN>, &'static str> = HeatMap::try_from(fucked_array);
 
             // DEBUG
             error!("fucked_map: {fucked_map:?} >>> {:?} {} {}",
@@ -148,7 +155,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
                    fucked_array.len(),
                    (fucked_array.len() as f32).sqrt(),
             );
-            */
+            // */
 
             match heat_map {
                 Ok(m) => {
