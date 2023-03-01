@@ -139,6 +139,7 @@ impl<const N: usize, const L: usize> TryFrom<[Temperature; N]> for HeatMap<Tempe
 
 //
 // L is output array len
+#[allow(unused)]
 pub fn measure<I2C, D, E, const L: usize>(grideye: &mut GridEye<I2C, D>) -> ([Temperature; L], Temperature, Temperature)
 where
     I2C: Read<Error = E> + Write<Error = E> + WriteRead<Error = E>,
@@ -157,7 +158,7 @@ where
         .enumerate()
         .for_each(|(array_index, pixel_index)| {
             if let Ok(pixel_temp) = grideye.get_pixel_temperature_celsius(pixel_index) {
-                if let Some(pixel) = grid_raw.get_mut(array_index as usize) {
+                if let Some(pixel) = grid_raw.get_mut(array_index) {
                     *pixel = pixel_temp;
                 }
                 
@@ -165,6 +166,74 @@ where
                 if pixel_temp < min_temperature { min_temperature = pixel_temp }
             }
         });
+
+    (grid_raw, min_temperature ,max_temperature)
+}
+
+//
+// L is output array len
+#[allow(unused)]
+pub fn measure_as_be_bytes<I2C, D, E, const L: usize>(grideye: &mut GridEye<I2C, D>) -> ([[u8; 4]; L], Temperature, Temperature)
+where
+    I2C: Read<Error = E> + Write<Error = E> + WriteRead<Error = E>,
+    D: DelayMs<u8>,
+    E: Debug,
+{
+
+    //let mut grid_raw = [[TEMPERATURE_ERROR_VALUE.to_be_bytes(); 4]; L];
+    let mut grid_raw = [TEMPERATURE_ERROR_VALUE.to_be_bytes(); L];
+    let mut max_temperature = TEMPERATURE_MAX;
+    let mut min_temperature = TEMPERATURE_MIN;
+
+    //(0..L as u8)                   // dynamic 00--07 .. 56--63
+    //STATIC_ARRAY                   // static  00--07 .. 56--63
+    STATIC_ARRAY_FLIPPED_HORIZONTAL  // static  56--63 .. 00--07
+        .into_iter()
+        .enumerate()
+        .for_each(|(array_index, pixel_index)| {
+            if let Ok(pixel_temp) = grideye.get_pixel_temperature_celsius(pixel_index) {
+                if let Some(pixel) = grid_raw.get_mut(array_index) {
+                    *pixel = pixel_temp.to_be_bytes();
+                }
+                
+                if pixel_temp > max_temperature { max_temperature = pixel_temp }
+                if pixel_temp < min_temperature { min_temperature = pixel_temp }
+            }
+        });
+
+    (grid_raw, min_temperature ,max_temperature)
+}
+
+//
+// L is output array len
+//pub fn measure_as_be_bytes_flat<I2C, D, E, const L: usize>(grideye: &mut GridEye<I2C, D>) -> (Vec<u8>, Temperature, Temperature)
+#[allow(unused)]
+pub fn measure_as_be_bytes_flat<I2C, D, E>(grideye: &mut GridEye<I2C, D>) -> (Vec<u8>, Temperature, Temperature)
+where
+    I2C: Read<Error = E> + Write<Error = E> + WriteRead<Error = E>,
+    D: DelayMs<u8>,
+    E: Debug,
+{
+
+    let mut max_temperature = TEMPERATURE_MAX;
+    let mut min_temperature = TEMPERATURE_MIN;
+
+    //(0..L as u8)                                  // dynamic 00--07 .. 56--63
+    //STATIC_ARRAY                                  // static  00--07 .. 56--63
+    let grid_raw = STATIC_ARRAY_FLIPPED_HORIZONTAL  // static  56--63 .. 00--07
+        .into_iter()
+        .flat_map(|pixel_index| {
+            match grideye.get_pixel_temperature_celsius(pixel_index) {
+                Ok(pixel_temp) => {
+                    if pixel_temp > max_temperature { max_temperature = pixel_temp }
+                    if pixel_temp < min_temperature { min_temperature = pixel_temp }
+                    
+                    pixel_temp.to_be_bytes()
+                },
+                Err(_e) => TEMPERATURE_ERROR_VALUE.to_be_bytes(),
+            }
+        })
+        .collect::<Vec<u8>>();
 
     (grid_raw, min_temperature ,max_temperature)
 }

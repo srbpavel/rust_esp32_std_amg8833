@@ -12,6 +12,8 @@ pub struct Config {
     mqtt_user: &'static str,
     #[default("")]
     mqtt_pass: &'static str,
+    #[default("/default_mqtt_topic/")]
+    mqtt_topic: &'static str,
     
     #[default("")]
     wifi_ssid: &'static str,
@@ -35,6 +37,8 @@ pub struct Config {
     flag_show_array_index: bool,
     #[default(false)]
     flag_show_payload: bool,
+    #[default(true)]
+    flag_measure_duration: bool,
     
     #[default(1000)]
     delay_sleep_duration_ms: u16,

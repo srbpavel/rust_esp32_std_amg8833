@@ -8,7 +8,8 @@ uuid = ""
 mqtt_broker_url = "mqtt://192.168.0.103"
 mqtt_user = ""
 mqtt_pass = ""
-    
+mqtt_topic = "/default_mqtt_topic/"
+
 wifi_ssid = ""
 wifi_pass = ""
 
@@ -21,7 +22,8 @@ flag_debug = true #false
 flag_display = true #false
 flag_show_array_index = false
 flag_show_payload = true #false
-    
+flag_measure_duration = false
+
 #10 Hz -> 10times per second
 #delay_sleep_duration_ms = 30000 #30sec
 #delay_sleep_duration_ms = 10000 #10sec
