@@ -116,12 +116,6 @@ fn main() -> Result<(), WrapError<I2cError>> {
     )?;
 
     // MQTT
-    /*
-    // connection fn error
-    let (mqtt_client_id, mut mqtt_client, mut mqtt_connection) =
-        mqtt::init().unwrap(); // todo!() ERROR
-    */
-
     let mqtt_client_id_uniq = &format!("{}_{}_{}_{}", 
                                        app_config.machine_type,
                                        app_config.machine_number,

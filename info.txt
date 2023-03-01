@@ -1,1 +1,7 @@
 find src/ -name "*rs" -exec egrep "unwrap" {} +
+
+cargo build --release --target riscv32imc-esp-espidf; ls -la /dev | egrep "ttyACM"
+
+cp cfg_queen.toml cfg.toml ; cargo espflash flash --release --monitor --port /dev/ttyACM0
+
+espmonitor --no-reset /dev/ttyACM0
