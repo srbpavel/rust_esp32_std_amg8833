@@ -11,6 +11,7 @@ pub enum WrapError<E> {
     WrapDisplayError(DisplayError), // BusWriteError if display not found
     I2c(E),
     I2cError,
+    WrapAnyhowError(anyhow::Error),
 }
 
 impl<E> From<DisplayError> for WrapError<E> {
@@ -34,5 +35,11 @@ impl<E> From<I2cError> for WrapError<E> {
 impl<E> From<GridEyeError<E>> for WrapError<E> {
     fn from(error: GridEyeError<E>) -> Self {
         Self::WrapGridEyeError(error)
+    }
+}
+
+impl<E> From<anyhow::Error> for WrapError<E> {
+    fn from(error: anyhow::Error) -> Self {
+        Self::WrapAnyhowError(error)
     }
 }

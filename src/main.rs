@@ -1,19 +1,25 @@
+mod config;
 mod errors;
 mod i2c;
 mod sensor_agm;
+mod eventloop;
+mod wifi;
+
+use sensor_agm::HeatMap;
+
+use eventloop::EventLoopMessage;
 
 use errors::WrapError;
 
 use sensor_agm::LEN;
 use sensor_agm::POW;
-
-use sensor_agm::HeatMap;
 use sensor_agm::Temperature;
 
 use esp_idf_sys as _;
 
 use esp_idf_svc::log::EspLogger;
 use esp_idf_svc::systime::EspSystemTime;
+use esp_idf_svc::eventloop::EspSystemEventLoop;
 
 use embedded_hal::blocking::delay::DelayMs;
 
@@ -34,10 +40,32 @@ use embedded_graphics::mono_font::ascii::FONT_6X10;
 use embedded_graphics::mono_font::MonoTextStyleBuilder;
 use embedded_graphics::pixelcolor::BinaryColor;
 use embedded_graphics::prelude::*;
-use embedded_graphics::primitives::PrimitiveStyleBuilder;
-use embedded_graphics::primitives::Rectangle;
+//use embedded_graphics::primitives::PrimitiveStyleBuilder;
+//use embedded_graphics::primitives::Rectangle;
 use embedded_graphics::text::Baseline;
 use embedded_graphics::text::Text;
+
+use esp_idf_svc::mqtt::client::MqttClientConfiguration;
+use esp_idf_svc::mqtt::client::EspMqttClient;
+use embedded_svc::mqtt::client::QoS;
+
+use embedded_svc::mqtt::client::{
+    Details::Complete,
+    Event::{
+        Received,
+        BeforeConnect,
+        Connected,
+        Disconnected,
+        Subscribed,
+        Unsubscribed,
+        Published,
+        Deleted,
+    },
+    Message,
+    Connection,
+};
+
+use std::sync::mpsc::channel;
 
 use std::time::Instant;
 
@@ -48,15 +76,18 @@ use log::info;
 #[allow(unused_imports)]
 use log::warn;
 
-const SLEEP_DURATION: u16 = 30 * 1000;
-
 //
+// todo!(all error)
 fn main() -> Result<(), WrapError<I2cError>> {
     esp_idf_sys::link_patches();
     EspLogger::initialize_default();
-
     info!("### amg8833: array {LEN}x{LEN}");
 
+    let app_config = config::CONFIG;
+    if app_config.flag_debug.eq(&true) {
+        info!("### CONFIG >>> {:#?}", app_config);
+    }
+    
     let machine_boot = EspSystemTime {}.now();
     warn!("machine_uptime: {machine_boot:?}");
     let mut cycle_counter = 0;
@@ -66,7 +97,95 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
     let peripherals = esp_idf_hal::peripherals::Peripherals::take().unwrap();
 
-    // VALID
+    // !!! FUTURE_USE
+    // EVENT LOOP
+    let sysloop = EspSystemEventLoop::take()?;
+    error!("@@@ about to subscribe to the background event loop");
+    let _subscription = sysloop.subscribe(move |message: &EventLoopMessage| {
+        error!("@@@ got message from the event loop: {:?} <- uptime",
+               message);
+    })?;
+    
+    // WIFI
+    let nvs_partition = esp_idf_svc::nvs::EspDefaultNvsPartition::take()?;
+    let _wifi = wifi::wifi(peripherals.modem,
+                           sysloop.clone(),
+                           app_config.wifi_ssid,
+                           app_config.wifi_pass,
+                           nvs_partition,
+    )?;
+
+    // MQTT
+    /*
+    // connection fn error
+    let (mqtt_client_id, mut mqtt_client, mut mqtt_connection) =
+        mqtt::init().unwrap(); // todo!() ERROR
+    */
+
+    let mqtt_client_id_uniq = &format!("{}_{}_{}_{}", 
+                                       app_config.machine_type,
+                                       app_config.machine_number,
+                                       app_config.machine_name,
+                                       //uuid::Uuid::new_v4().simple(),
+                                       app_config.uuid,
+    );
+    
+    let mqtt_config: MqttClientConfiguration = MqttClientConfiguration {
+        client_id: Some(mqtt_client_id_uniq),
+        ..Default::default()
+    };
+    
+    let (mut mqtt_client, mut mqtt_connection) = EspMqttClient::new_with_conn(
+        app_config.mqtt_broker_url,
+        &mqtt_config,
+    )?;
+
+    // CHANNEL's
+    let (mqtt_sender, _mqtt_receiver) = channel();
+
+    // MQTT LISTEN via CONNECTION + also PUBLISH
+    info!("### MQTT Listening for messages");
+    std::thread::spawn(move || {
+        while let Some(msg) = mqtt_connection.next() {
+            match msg {
+                Ok(message) => match message {
+                    Received(recieved_bytes) => {
+                        match recieved_bytes.details() {
+                            Complete => {
+                                match std::str::from_utf8(recieved_bytes.data()) {
+                                    Err(e) => info!("### MQTT Message: Received Error: unreadable message! ({}) >>> data: {:?}", e, recieved_bytes.data()),
+                                    Ok(_data) => {
+                                        mqtt_sender
+                                            .send(recieved_bytes)
+                                            .unwrap();
+                                    },
+                                }
+                            }
+                            _ => error!(" ### MQTT received_bytes details not COMPLETE status"),
+                        }
+                    },
+                    BeforeConnect => info!("MQTT Message : Before connect"),
+                    Connected(tf) => info!("MQTT Message : Connected({})", tf),
+                    Disconnected => info!("MQTT Message : Disconnected"),
+                    Subscribed(message_id) => {
+                        info!("MQTT Message : Subscribed({})", message_id)
+                    }
+                    Unsubscribed(message_id) => {
+                        info!("MQTT Message : Unsubscribed({})", message_id)
+                    }
+                    Published(message_id) => {
+                        info!("MQTT Message : Published({})", message_id)
+                    },
+                    Deleted(message_id) => info!("MQTT Message : Deleted({})", message_id),
+                },
+                Err(e) => info!("### MQTT Message ERROR: {:?}", e), // todo!()
+            }
+        }
+        
+        info!("MQTT connection loop exit");
+    });
+
+    // VALID I2C pins
     let pin_scl = peripherals.pins.gpio8;
     let pin_sda = peripherals.pins.gpio10;
 
@@ -80,37 +199,61 @@ fn main() -> Result<(), WrapError<I2cError>> {
     
     let i2c_proxy_1 = i2c_shared.acquire_i2c(); // agm
     let i2c_proxy_2 = i2c_shared.acquire_i2c(); // ssd1306
-    let i2c_proxy_5 = i2c_shared.acquire_i2c(); // i2c scan share loop
+    //let i2c_proxy_5 = i2c_shared.acquire_i2c(); // i2c scan share loop
     
     // GRIDEYE
     let mut grideye = GridEye::new(i2c_proxy_1, delay, Address::Standard);
-    
-    // DISPLAY
-    let interface = I2CDisplayInterface::new(i2c_proxy_2);
-    let mut display = Ssd1306::new(interface, DisplaySize128x64, DisplayRotation::Rotate0)
-        .into_buffered_graphics_mode();
 
-    display.init()?;
+    // DISPLAY    
+    // Option<Ssd1306<DI, SIZE, MODE>, MonoTextStyle<'_, BinaryColor>)>
+    let mut display_data = if app_config.flag_display.eq(&true) {
+        let display = Ssd1306::new(I2CDisplayInterface::new(i2c_proxy_2),
+                                   DisplaySize128x64,
+                                   DisplayRotation::Rotate0,
+        )
+            .into_buffered_graphics_mode();
 
-    let text_style = MonoTextStyleBuilder::new()
-        .font(&FONT_6X10)
-        .text_color(BinaryColor::On)
-        .build();
+        let text_style = MonoTextStyleBuilder::new()
+            .font(&FONT_6X10)
+            .text_color(BinaryColor::On)
+            .build();
+        
+        Some((display, text_style))
+    } else { None };
 
-    Text::with_baseline(
-        "foookume is KiNg!",
-        Point::new(0, 32),
-        text_style,
-        Baseline::Top,
-    )
-    .draw(&mut display)?;
+    // INIT
+    if let Some((ref mut display, text_style)) = display_data {
+        match display.init() {
+            Ok(_) => {
+                Text::with_baseline(
+                    "foookume is QuEeN!",
+                    Point::new(0, 32),
+                    text_style,
+                    Baseline::Top,
+                )
+                    //.draw(&mut display)?;
+                    .draw(display)?;
+                
+                display.flush()?;
+                
+                // boot display
+                sleep.delay_ms(app_config.delay_sleep_after_boot);
+            },
+            Err(e) => {
+                display_data = None;
 
-    display.flush()?;
+                error!("Error display init: {e:?}")
+            },
+        }
+    }
 
-    sleep.delay_ms(SLEEP_DURATION / 10);
+    // TOTAL
+    let mut max_temperature_total = sensor_agm::TEMPERATURE_MAX;
+    let mut min_temperature_total = sensor_agm::TEMPERATURE_MIN; 
 
     if grideye.power(Power::Wakeup).is_ok() {
         loop {
+            /*
             // I2C LOOP scan 
             let mut i2c_clone = i2c_proxy_5.clone();
             std::thread::spawn(move || {
@@ -133,6 +276,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
                     }
                 );
             });
+            */
 
             // GRIDEYE
             cycle_counter += 1;
@@ -140,22 +284,112 @@ fn main() -> Result<(), WrapError<I2cError>> {
             let start = Instant::now();
             let (grid_raw, min_temperature, max_temperature): ([Temperature; POW], Temperature, Temperature) = sensor_agm::measure(&mut grideye);
             let stop = Instant::now();
+            // 19ms so for now ok with 10fps for burst_mode
             warn!("measure durration: {:?}", stop.duration_since(start));
 
+            // /*
+            // TOTAL
+            // todo!() sometime we get minimum -61.0 -63.5 or 0.0
+            if max_temperature > max_temperature_total {
+                max_temperature_total = max_temperature;
+            }
+
+            if min_temperature < min_temperature_total {
+                min_temperature_total = min_temperature;
+            }
+            // */
+
+            // MQTT PUB
+            // we can change "to_be_bytes" directy when reading grid pixel ???
+            // yes we can but to read rebug will be harder
+            let topic = "/grid_eye/";
+            let start = Instant::now();
+            let payload = grid_raw
+                .into_iter()
+                .map(|b| b.to_be_bytes())
+                .flatten()
+                .collect::<Vec<_>>();
+            let stop = Instant::now();
+            warn!("measure f32 to bytes durration: {:?}", stop.duration_since(start));
+            
+            if app_config.flag_show_payload {
+                warn!("payload[{}]: {payload:?}", payload.len());
+            }
+
+            // /* 
+            match mqtt_client.publish(topic,
+                                      QoS::AtLeastOnce,
+                                      false,
+                                      //&payload as &[u8],
+                                      &payload,
+            ) {
+                Ok(status) => {
+                    info!("### MQTT >>> Status: {status} / Published to: '{topic}'");
+                },
+                Err(e) => {
+                    error!("### MQTT >>> Publish Error: '{e}'");
+                },
+            };
+            //_
+            // */
+
+            /*
+            std::thread::spawn(move || {
+                mqtt_publish_sender
+                    .send("channel_msg")
+                    .unwrap();
+            });
+            */
+            
+            /*
+            //std::thread::spawn(move || {
+                match mqtt_client.publish(topic,
+                                          QoS::AtLeastOnce,
+                                          false,
+                                          &[85_u8] as &[u8]
+                ) {
+                    Ok(status) => {
+                        info!("### MQTT >>> Status: {status} / Published to: '{topic}'");
+                    },
+                    Err(e) => {
+                        error!("### MQTT >>> Publish Error: '{e}'");
+                    },
+                }
+            //});
+            */
+
+            // SHOW ARRAY_INDEX
+            if app_config.flag_show_array_index {
+                let array_index: [Temperature; POW] = sensor_agm::STATIC_ARRAY_FLIPPED_HORIZONTAL
+                    .iter()
+                    .map(|i|*i as Temperature)
+                    .collect::<Vec<Temperature>>()
+                    .try_into()
+                    .unwrap();
+                
+                let array_map: Result<HeatMap<Temperature, LEN>, &'static str> = HeatMap::try_from(array_index);
+
+                match array_map {
+                    Ok(m) => info!("array_map_display:\n\n{m}"),
+                    Err(e) => error!("array to heat_map failed >>> {e}"),
+                }
+            }
+
+            /* // DISABLED -> via at TERMINAL
             // via Try_From
             let heat_map: Result<HeatMap<Temperature, LEN>, &'static str> = HeatMap::try_from(grid_raw);
 
-            // /* // move to tests
+            /* // move to tests
             let fucked_array = [0_f32, 1_f32, 2_f32];
             let fucked_map: Result<HeatMap<f32, LEN>, &'static str> = HeatMap::try_from(fucked_array);
-
+            
             // DEBUG
             error!("fucked_map: {fucked_map:?} >>> {:?} {} {}",
                    fucked_array,
                    fucked_array.len(),
                    (fucked_array.len() as f32).sqrt(),
             );
-            // */
+            */
 
             match heat_map {
                 Ok(m) => {
@@ -165,6 +399,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
                     error!("array to heat_map failed >>> {e}");
                 },
             }
+            */
 
             // DEBUG
             //info!("debug: {heat_map:?}");
@@ -172,6 +407,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
             // DISPLAY
             //info!("heat_map_display:\n\n{heat_map}");
 
+            /*
             let mut grid_indexed = grid_raw
                 .iter()
                 .enumerate()
@@ -184,59 +420,82 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
             // DEBUG RAW <-- reversed
             info!("grid_indexed: {grid_indexed:?}");
+            */
+
+
+            // DISPLAY
+            if let Some((ref mut display, text_style)) = display_data {
+                display.clear();
+
+                Text::with_baseline(
+                    &format!("{cycle_counter}"),
+                    Point::new(0, 0),
+                    text_style,
+                    Baseline::Top,
+                )
+                    //.draw(&mut display)?;
+                    .draw(display)?;
+                
+                Text::with_baseline(
+                    &format!("max:  {max_temperature:0.02}"),
+                    Point::new(48, 0),
+                    text_style,
+                    Baseline::Top,
+                )
+                    //.draw(&mut display)?;
+                    .draw(display)?;
             
-            // SSD1306
-            display.clear();
-
-            Text::with_baseline(
-                &format!("{cycle_counter}"),
-                Point::new(0, 0),
-                text_style,
-                Baseline::Top,
-            )
-            .draw(&mut display)?;
-
-            Text::with_baseline(
-                &format!("max:  {max_temperature}"),
-                Point::new(48, 0),
-                text_style,
-                Baseline::Top,
-            )
-            .draw(&mut display)?;
-
-            Text::with_baseline(
-                &format!("min:  {min_temperature}"),
-                Point::new(48, 16),
-                text_style,
-                Baseline::Top,
-            )
-            .draw(&mut display)?;
-
-            Text::with_baseline(
-                &format!("diff: {}", max_temperature - min_temperature,),
-                Point::new(48, 32),
-                text_style,
-                Baseline::Top,
-            )
-            .draw(&mut display)?;
-
-            let style = PrimitiveStyleBuilder::new()
+                Text::with_baseline(
+                    &format!("min:  {min_temperature:0.02}"),
+                    Point::new(48, 16),
+                    text_style,
+                    Baseline::Top,
+                )
+                    //.draw(&mut display)?;
+                    .draw(display)?;
+                
+                // /*
+                // TOTAL
+                Text::with_baseline(
+                    &format!("{min_temperature_total:0.02} / {max_temperature_total:0.02}"),
+                    Point::new(0, 48),
+                    text_style,
+                    Baseline::Top,
+                )
+                    //.draw(&mut display)?;
+                    .draw(display)?;
+                // */
+                
+                Text::with_baseline(
+                    &format!("diff: {:0.02}", max_temperature - min_temperature,),
+                    Point::new(48, 32),
+                    text_style,
+                    Baseline::Top,
+                )
+                    //.draw(&mut display)?;
+                    .draw(display)?;
+                
+                /*
+                let style = PrimitiveStyleBuilder::new()
                 .stroke_color(BinaryColor::On)
                 .stroke_width(1)
                 .fill_color(BinaryColor::Off)
                 .build();
-
-            Rectangle::new(Point::new(48, 48), Size::new(16, 16))
+                
+                Rectangle::new(Point::new(48, 48), Size::new(16, 16))
                 .into_styled(style)
                 .draw(&mut display)?;
-
-            display.flush()?;
-
-            info!("chrrr...\n");
-            sleep.delay_ms(SLEEP_DURATION);
+                 */
+                
+                display.flush()?;
+            }
+                
+            //info!("[{SLEEP_DURATION_MS}]chrrr...\n");
+            sleep.delay_ms(app_config.delay_sleep_duration_ms);
         }
     }
 
+    error!("ok");
     Ok(())
 }
 

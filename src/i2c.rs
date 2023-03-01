@@ -36,12 +36,9 @@ const CMD: [u8; 0] = [];
 enum KnownDevice {
     Amg8833Default = 0x69,
     //Amg8833Alternate = 0x68,
-
     Ssd1306Default = 0x3C,
     Ssd1306Alternate = 0x3D,
-
     Shtc3 = 0x70,
-
     ImuAD0 = 0x68,
     //ImuAD1 = 0x69,
 }

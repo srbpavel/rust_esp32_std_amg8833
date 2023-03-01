@@ -1,0 +1,31 @@
+#!!! value need's to be same as package.name
+#!!! otherwise default values from Struct
+#!!! if syntax is wrong it will also use Struct default values
+[rust_esp32_std_amg8833]
+
+uuid = ""
+
+mqtt_broker_url = "mqtt://192.168.0.103"
+mqtt_user = ""
+mqtt_pass = ""
+    
+wifi_ssid = ""
+wifi_pass = ""
+
+machine_number = 0
+machine_name = "some_name"
+machine_type = "esp32_c3_rev3_rust_board"
+machine_mac = "00:00:00:00:00:00"
+
+flag_debug = true #false
+flag_display = true #false
+flag_show_array_index = false
+flag_show_payload = true #false
+    
+#10 Hz -> 10times per second
+#delay_sleep_duration_ms = 30000 #30sec
+#delay_sleep_duration_ms = 10000 #10sec
+#delay_sleep_duration_ms = 1000 #1sec
+delay_sleep_duration_ms = 100 # 1000ms / 100ms = 10fps/Hz
+
+delay_sleep_after_boot = 1000

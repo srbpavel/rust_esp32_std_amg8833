@@ -5,6 +5,9 @@ authors = ["prace@srbpavel.cz <prace@srbpavel.cz>"]
 edition = "2021"
 resolver = "2"
 
+[package.metadata.espflash]
+partition_table = "partitions.csv"
+
 [profile.release]
 opt-level = "s"
 
@@ -25,6 +28,11 @@ embedded-svc = "0.24"
 embedded-hal = { version="0.2.7", features = ["unproven"] }
 #embedded-hal = { version="1.0.0-alpha.9" }
 
+toml-cfg = "0.1.3"
+
+#serde = { version = "1.0.147", features = ["derive"] }
+#serde_json = "1.0.89"
+
 anyhow = "1"
 log = "0.4"
 
@@ -38,6 +46,10 @@ embedded-graphics = "0.7.1"
 shared-bus = { version="0.2.5", features = ["std"]}
 
 shtcx = "0.10.0"
+
+#uuid = { version = "1.3.0", features = ["v4", "fast-rng", "macro-diagnostics"] }
+
+[dev-dependencies]
 
 [build-dependencies]
 embuild = "0.31"

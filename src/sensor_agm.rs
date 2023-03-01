@@ -21,10 +21,17 @@ use log::info;
 use log::warn;
 
 const TEMPERATURE_ERROR_VALUE: f32 = 85_f32;
-const TEMPERATURE_MAX: f32 = -55_f32;
-const TEMPERATURE_MIN: f32 = 125_f32;
+
+pub const TEMPERATURE_MAX: f32 = -55_f32;
+pub const TEMPERATURE_MIN: f32 = 125_f32;
 pub const LEN: usize = 8; // array column/row size
 pub const POW: usize = LEN * LEN;
+
+#[allow(unused)]
+pub const STATIC_ARRAY: [u8; POW] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63];
+
+#[allow(unused)]
+pub const STATIC_ARRAY_FLIPPED_HORIZONTAL: [u8; POW] = [56, 57, 58, 59, 60, 61, 62, 63, 48, 49, 50, 51, 52, 53, 54, 55, 40, 41, 42, 43, 44, 45, 46, 47, 32, 33, 34, 35, 36, 37, 38, 39, 24, 25, 26, 27, 28, 29, 30, 31, 16, 17, 18, 19, 20, 21, 22, 23, 8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7];
 
 pub type Temperature = f32;
 
@@ -85,7 +92,7 @@ where
                     f,
                     "{first}* {}  *{blank_line}{last}",
                     row.iter()
-                        .map(|t| { format!(" {t:0.02}") })
+                        .map(|t| format!(" {t:02.02}"))
                         .collect::<String>(),
                 )
             })
@@ -141,16 +148,23 @@ where
     let mut max_temperature = TEMPERATURE_MAX;
     let mut min_temperature = TEMPERATURE_MIN;
 
-    (0..L as u8).into_iter().for_each(|pixel_index| {
-        if let Ok(pixel_temp) = grideye.get_pixel_temperature_celsius(pixel_index) {
-            if let Some(pixel) = grid_raw.get_mut(pixel_index as usize) {
-                *pixel = pixel_temp;
-            }
 
-            if pixel_temp > max_temperature { max_temperature = pixel_temp }
-            if pixel_temp < min_temperature { min_temperature = pixel_temp }
-        }
-    });
+    //(0..L as u8)                   // dynamic 00--07 .. 56--63
+    //STATIC_ARRAY                   // static  00--07 .. 56--63
+    STATIC_ARRAY_FLIPPED_HORIZONTAL  // static  56--63 .. 00--07
+        .into_iter()
+        .enumerate()
+        .for_each(|(array_index, pixel_index)| {
+            if let Ok(pixel_temp) = grideye.get_pixel_temperature_celsius(pixel_index) {
+                //if let Some(pixel) = grid_raw.get_mut(pixel_index as usize) {
+                if let Some(pixel) = grid_raw.get_mut(array_index as usize) {
+                    *pixel = pixel_temp;
+                }
+                
+                if pixel_temp > max_temperature { max_temperature = pixel_temp }
+                if pixel_temp < min_temperature { min_temperature = pixel_temp }
+            }
+        });
 
     (grid_raw, min_temperature ,max_temperature)
 }
