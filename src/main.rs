@@ -66,8 +66,6 @@ use embedded_svc::mqtt::client::{
 
 use std::sync::mpsc::channel;
 
-//use std::time::Instant;
-
 #[allow(unused_imports)]
 use log::error;
 #[allow(unused_imports)]
@@ -272,17 +270,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
             // GRIDEYE
             cycle_counter += 1;
 
-            //let start = Instant::now();
-            // TEMPERATURE AS float
-            //let (grid_raw, min_temperature, max_temperature): ([Temperature; POW], Temperature, Temperature) = sensor_agm::measure(&mut grideye);
-            // TEMPERATURE AS be_bytes
-            //let (payload, min_temperature, max_temperature): (Vec<u8>, Temperature, Temperature) = sensor_agm::measure_as_be_bytes_flat(&mut grideye);
-            // TEMPERATURE AS be_bytes
             let (payload, min_temperature, max_temperature): ([u8; PAYLOAD_LEN], Temperature, Temperature) = sensor_agm::measure_as_array_bytes(&mut grideye);
-            
-            //let stop = Instant::now();
-            // 19ms so for now ok with 10fps for burst_mode
-            //warn!("measure durration: {:?}", stop.duration_since(start));
 
             // /*
             // TOTAL

@@ -105,24 +105,6 @@ where
 
 pub struct Payload<const N: usize> ([u8; N]);
 
-// struct RawVec (Vec<u8>);
-
-/*
-impl<const N: usize> From<RawVec> for Payload<N> {
-    fn from(raw_vec: RawVec) -> Self {
-        let mut array: [u8; N] = [0 as u8; N];
-
-        raw_vec
-            .0
-            .into_iter()
-            .enumerate()
-            .for_each(|(index, item)| array[index] = item);
-            
-        Payload(array)
-    }
-}
-*/
-
 impl<const N: usize> From<Vec<u8>> for Payload<N> {
     fn from(raw_vec: Vec<u8>) -> Self {
         let mut array: [u8; N] = [0 as u8; N];
@@ -135,24 +117,6 @@ impl<const N: usize> From<Vec<u8>> for Payload<N> {
         Payload(array)
     }
 }
-
-/*
-//impl<T, const N: usize> From<[T; N]> for Vec<T> {
-//impl<T, const N: usize> From<[T; N]> for RawVec<T> {
-//impl<T, const N: usize> From<Payload<T, N>> for RawVec<T> {
-impl<T, const N: usize> From<[T; N]> for RawVec<T> {
-    fn from(array: [T; N]) -> Self {
-        RawVec(
-            array
-                .into_iter()
-                .map(|a| a)
-                .collect::<Vec<T>>()
-        )
-    }
-}
-*/
-
-
 
 //
 // N is array len, N = LEN * LEN
@@ -260,10 +224,9 @@ where
 
 //
 // L is output array len
+// we output array instead vec
 #[allow(unused)]
-//pub fn measure_as_array_bytes<I2C, D, E, const L: usize>(grideye: &mut GridEye<I2C, D>) -> (Result<[u8; L], Vec<u8>>, Temperature, Temperature)
 pub fn measure_as_array_bytes<I2C, D, E, const L: usize>(grideye: &mut GridEye<I2C, D>) -> ([u8; L], Temperature, Temperature)
-//pub fn measure_as_array_bytes<I2C, D, E, const L: usize>(grideye: &mut GridEye<I2C, D>) -> (Payload<L>, Temperature, Temperature)
 where
     I2C: Read<Error = E> + Write<Error = E> + WriteRead<Error = E>,
     D: DelayMs<u8>,
@@ -275,8 +238,6 @@ where
 
     //(0..L as u8)                   // dynamic 00--07 .. 56--63
     //STATIC_ARRAY                   // static  00--07 .. 56--63
-    //let grid_raw: Result<[u8; L], Vec<u8>> = STATIC_ARRAY_FLIPPED_HORIZONTAL  // static  56--63 .. 00--07
-    //let grid_raw: [u8; L] = STATIC_ARRAY_FLIPPED_HORIZONTAL  // static  56--63 .. 00--07
     let grid_raw = STATIC_ARRAY_FLIPPED_HORIZONTAL  // static  56--63 .. 00--07
         .into_iter()
         .enumerate()
@@ -292,14 +253,8 @@ where
             }
         })
         .collect::<Vec<u8>>();
-        //.collect::<RawVec<Vec<u8>>>()
-        //.try_into();
-        //.into();
 
-    //let array: Payload<L> = RawVec(grid_raw).into();
     let array: Payload<L> = grid_raw.into();
-    //let array = Into::<Payload<L>>::into(grid_raw).0;
     
     (array.0, min_temperature ,max_temperature)
-    //(array, min_temperature ,max_temperature)
 }
