@@ -4,6 +4,9 @@ use std::fmt::Display;
 
 use std::ops;
 
+//use std::any::Any;
+//use std::any::TypeId;
+
 use grideye::Framerate;
 use grideye::GridEye;
 
@@ -26,7 +29,8 @@ pub const TEMPERATURE_MAX: f32 = -55_f32;
 pub const TEMPERATURE_MIN: f32 = 125_f32;
 pub const LEN: usize = 8; // array column/row size
 pub const POW: usize = LEN * LEN;
-pub const PAYLOAD_LEN: usize = 4 * POW;
+pub const CHUNK_SIZE: usize = 4;
+pub const PAYLOAD_LEN: usize = CHUNK_SIZE * POW;
 
 /*
 #[allow(unused)]
@@ -66,9 +70,9 @@ impl<T, const N: usize> ops::Deref for HeatMap<T, N> {
     }
 }
 
-impl<T, const N: usize> Display for HeatMap<T, N>
+impl<'a, T, const N: usize> Display for HeatMap<T, N>
 where
-    T: Display,
+    T: Display + 'a + 'static,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut line = 0;
@@ -96,25 +100,20 @@ where
                     "{first}* {}  *{blank_line}{last}",
                     row.iter()
                         .map(|t| format!(" {t:02.02}"))
+                        /*
+                        .map(|t| {
+                            if is_temperature(t).eq(&true) {
+                                format!(" {t:02.02}")
+                            } else {
+                                format!(" {t:02}")
+                            }
+
+                        })
+                        */
                         .collect::<String>(),
                 )
             })
         })
-    }
-}
-
-pub struct Payload<const N: usize> ([u8; N]);
-
-impl<const N: usize> From<Vec<u8>> for Payload<N> {
-    fn from(raw_vec: Vec<u8>) -> Self {
-        let mut array: [u8; N] = [0 as u8; N];
-
-        raw_vec
-            .into_iter()
-            .enumerate()
-            .for_each(|(index, item)| array[index] = item);
-            
-        Payload(array)
     }
 }
 
@@ -151,6 +150,22 @@ impl<const N: usize, const L: usize> TryFrom<[Temperature; N]> for HeatMap<Tempe
         });
 
         Ok(heat_map)
+    }
+}
+
+#[derive(Clone)]
+pub struct Payload<const N: usize>(pub [u8; N]);
+
+impl<const N: usize> From<Vec<u8>> for Payload<N> {
+    fn from(raw_vec: Vec<u8>) -> Self {
+        let mut array: [u8; N] = [0 as u8; N];
+
+        raw_vec
+            .into_iter()
+            .enumerate()
+            .for_each(|(index, item)| array[index] = item);
+            
+        Payload(array)
     }
 }
 
@@ -226,7 +241,7 @@ where
 // L is output array len
 // we output array instead vec
 #[allow(unused)]
-pub fn measure_as_array_bytes<I2C, D, E, const L: usize>(grideye: &mut GridEye<I2C, D>) -> ([u8; L], Temperature, Temperature)
+pub fn measure_as_array_bytes<I2C, D, E, const L: usize>(grideye: &mut GridEye<I2C, D>) -> (Payload<L>, Temperature, Temperature)
 where
     I2C: Read<Error = E> + Write<Error = E> + WriteRead<Error = E>,
     D: DelayMs<u8>,
@@ -256,5 +271,43 @@ where
 
     let array: Payload<L> = grid_raw.into();
     
-    (array.0, min_temperature ,max_temperature)
+    (array, min_temperature ,max_temperature)
 }
+    
+//
+// just for debug purpose to see heatmap with temperature values
+pub fn payload_to_values<const N: usize>(payload: Payload<N>) -> Result<[Temperature; POW], Vec<Temperature>> {
+    let chunks = payload.0.chunks(CHUNK_SIZE);
+
+    let values = chunks
+        .map(|chunk| {
+            let chunk_result: Result<[u8; 4], _> = chunk.try_into();
+            let pixel_temp = match chunk_result {
+                Ok(value) => {
+                    let temp = f32::from_be_bytes(value);
+                    
+                    temp
+                },
+                Err(e) => {
+                    error!("### chunk error conversion: {e:?} {chunk:?}");
+                    
+                    TEMPERATURE_ERROR_VALUE
+                },
+            };
+            
+            pixel_temp
+        })
+        .collect::<Vec<Temperature>>();
+
+    TryInto::<[Temperature; POW]>::try_into(values)
+}
+
+/*
+fn is_temperature(s: &dyn Any) -> bool {
+    TypeId::of::<Temperature>() == s.type_id()
+}
+
+fn is_index(s: &dyn Any) -> bool {
+    TypeId::of::<u8>() == s.type_id()
+}
+*/

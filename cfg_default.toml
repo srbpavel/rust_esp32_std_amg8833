@@ -21,8 +21,10 @@ machine_mac = "00:00:00:00:00:00"
 flag_debug = true #false
 flag_display = true #false
 flag_show_array_index = false
+flag_show_heatmap = false
 flag_show_payload = true #false
 flag_measure_duration = false
+flag_scan_i2c = false
 
 #10 Hz -> 10times per second
 #delay_sleep_duration_ms = 30000 #30sec

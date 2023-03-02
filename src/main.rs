@@ -5,16 +5,16 @@ mod sensor_agm;
 mod eventloop;
 mod wifi;
 
+use crate::sensor_agm::Temperature;
 use crate::sensor_agm::HeatMap;
+use crate::sensor_agm::Payload;
+use crate::sensor_agm::LEN;
+use crate::sensor_agm::POW;
 use crate::sensor_agm::PAYLOAD_LEN;
 
 use eventloop::EventLoopMessage;
 
 use errors::WrapError;
-
-use sensor_agm::LEN;
-use sensor_agm::POW;
-use sensor_agm::Temperature;
 
 use esp_idf_sys as _;
 
@@ -189,7 +189,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
     
     let i2c_proxy_1 = i2c_shared.acquire_i2c(); // agm
     let i2c_proxy_2 = i2c_shared.acquire_i2c(); // ssd1306
-    //let i2c_proxy_5 = i2c_shared.acquire_i2c(); // i2c scan share loop
+    let i2c_proxy_5 = i2c_shared.acquire_i2c(); // i2c scan share loop
     
     // GRIDEYE
     let mut grideye = GridEye::new(i2c_proxy_1, delay, Address::Standard);
@@ -242,39 +242,44 @@ fn main() -> Result<(), WrapError<I2cError>> {
 
     if grideye.power(Power::Wakeup).is_ok() {
         loop {
-            /*
-            // I2C LOOP scan for debug
-            let mut i2c_clone = i2c_proxy_5.clone();
-            std::thread::spawn(move || {
-                warn!("i2c_scan_shared_loop + thread");
-                let active_address = i2c::scan_shared(&mut i2c_clone);
-
-                info!(
-                    "I2C LOOP active address: {:?}",
-                    match active_address {
-                        Some(active) => {
-                            active
-                                .iter()
-                                .map(|a| format!("{a:#X} "))
-                                .collect::<Vec<String>>()
-                                .concat()
-                        }
-                        None => {
-                            String::from("")
-                        }
-                    }
-                );
-            });
-            */
-
-            // GRIDEYE
             cycle_counter += 1;
 
-            let (payload, min_temperature, max_temperature): ([u8; PAYLOAD_LEN], Temperature, Temperature) = sensor_agm::measure_as_array_bytes(&mut grideye);
+            // I2C LOOP scan for debug
+            if app_config.flag_scan_i2c.eq(&true) {
+                let mut i2c_clone = i2c_proxy_5.clone();
+                std::thread::spawn(move || {
+                    warn!("i2c_scan_shared_loop + thread");
+                    let active_address = i2c::scan_shared(&mut i2c_clone);
+                    
+                    info!(
+                        "I2C LOOP active address: {:?}",
+                        match active_address {
+                            Some(active) => {
+                                active
+                                    .iter()
+                                    .map(|a| format!("{a:#X} "))
+                                    .collect::<Vec<String>>()
+                                    .concat()
+                            }
+                            None => {
+                                String::from("")
+                            }
+                        }
+                    );
+                });
+            }
+            
+            // GRIDEYE
+            let (payload, min_temperature, max_temperature): (Payload<PAYLOAD_LEN>, Temperature, Temperature) = sensor_agm::measure_as_array_bytes(&mut grideye);
 
-            // /*
+            if app_config.flag_show_payload {
+                warn!("payload[{}]: {:?}",
+                      payload.0.len(),
+                      payload.0,
+                );
+            }
+            
             // TOTAL
-            // todo!() sometime we get minimum -61.0 -63.5 or 0.0
             if max_temperature > max_temperature_total {
                 max_temperature_total = max_temperature;
             }
@@ -282,28 +287,12 @@ fn main() -> Result<(), WrapError<I2cError>> {
             if min_temperature < min_temperature_total {
                 min_temperature_total = min_temperature;
             }
-            // */
-
-            // MQTT PUB
-            /*
-            let start = Instant::now();
-            let payload = grid_raw
-                .into_iter()
-                .map(|b| b.to_be_bytes())
-                .flatten()
-                .collect::<Vec<_>>();
-            let stop = Instant::now();
-            warn!("measure f32 to bytes durration: {:?}", stop.duration_since(start));
             
-            */
-            if app_config.flag_show_payload {
-                warn!("payload[{}]: {payload:?}", payload.len());
-            }
-            
+            // MQTT_PUB
             match mqtt_client.publish(app_config.mqtt_topic,
                                       QoS::AtLeastOnce,
                                       false,
-                                      &payload,
+                                      &payload.0,
             ) {
                 Ok(_status) => {
                     // SILENT
@@ -331,54 +320,27 @@ fn main() -> Result<(), WrapError<I2cError>> {
                 }
             }
 
-            /* // DISABLED -> via at TERMINAL
-            // via Try_From
-            let heat_map: Result<HeatMap<Temperature, LEN>, &'static str> = HeatMap::try_from(grid_raw);
-
-            /* // move to tests
-            let fucked_array = [0_f32, 1_f32, 2_f32];
-            let fucked_map: Result<HeatMap<f32, LEN>, &'static str> = HeatMap::try_from(fucked_array);
-            
-            // DEBUG
-            error!("fucked_map: {fucked_map:?} >>> {:?} {} {}",
-                   fucked_array,
-                   fucked_array.len(),
-                   (fucked_array.len() as f32).sqrt(),
-            );
-            */
-
-            match heat_map {
-                Ok(m) => {
-                    info!("heat_map_display:\n\n{m}");
-                },
-                Err(e) => {
-                    error!("array to heat_map failed >>> {e}");
-                },
+            // DISPLAY HEATMAP
+            if app_config.flag_show_heatmap {
+                match sensor_agm::payload_to_values(payload.clone()) {
+                    Ok(grid_raw) => {
+                        let heat_map: Result<HeatMap<Temperature, LEN>, &'static str> = HeatMap::try_from(grid_raw);
+                        
+                        match heat_map {
+                            Ok(m) => {
+                                info!("heat_map_display:\n\n{m}");
+                            },
+                            Err(e) => {
+                                error!("array to heat_map failed >>> {e}");
+                            },
+                        }
+                    },
+                    Err(e) => {
+                        error!("payload to array failed >>> {e:?}");
+                    },
+                }
             }
-            */
-
-            // DEBUG
-            //info!("debug: {heat_map:?}");
-
-            // DISPLAY
-            //info!("heat_map_display:\n\n{heat_map}");
-
-            /*
-            let mut grid_indexed = grid_raw
-                .iter()
-                .enumerate()
-                .map(|(index, item)| {
-                    format!("{index:02}:{item:02.02}")
-                })
-                .collect::<Vec<_>>();
-
-            grid_indexed.reverse();
-
-            // DEBUG RAW <-- reversed
-            info!("grid_indexed: {grid_indexed:?}");
-            */
-
-
+            
             // DISPLAY
             if let Some((ref mut display, text_style)) = display_data {
                 display.clear();
@@ -434,4 +396,3 @@ fn main() -> Result<(), WrapError<I2cError>> {
     error!("ok");
     Ok(())
 }
-
