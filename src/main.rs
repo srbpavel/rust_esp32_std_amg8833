@@ -5,7 +5,8 @@ mod sensor_agm;
 mod eventloop;
 mod wifi;
 
-use sensor_agm::HeatMap;
+use crate::sensor_agm::HeatMap;
+use crate::sensor_agm::PAYLOAD_LEN;
 
 use eventloop::EventLoopMessage;
 
@@ -244,7 +245,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
     if grideye.power(Power::Wakeup).is_ok() {
         loop {
             /*
-            // I2C LOOP scan 
+            // I2C LOOP scan for debug
             let mut i2c_clone = i2c_proxy_5.clone();
             std::thread::spawn(move || {
                 warn!("i2c_scan_shared_loop + thread");
@@ -272,10 +273,13 @@ fn main() -> Result<(), WrapError<I2cError>> {
             cycle_counter += 1;
 
             //let start = Instant::now();
-            // temperature as float
+            // TEMPERATURE AS float
             //let (grid_raw, min_temperature, max_temperature): ([Temperature; POW], Temperature, Temperature) = sensor_agm::measure(&mut grideye);
-            // temperature as be_bytes
-            let (payload, min_temperature, max_temperature): (Vec<u8>, Temperature, Temperature) = sensor_agm::measure_as_be_bytes_flat(&mut grideye);
+            // TEMPERATURE AS be_bytes
+            //let (payload, min_temperature, max_temperature): (Vec<u8>, Temperature, Temperature) = sensor_agm::measure_as_be_bytes_flat(&mut grideye);
+            // TEMPERATURE AS be_bytes
+            let (payload, min_temperature, max_temperature): ([u8; PAYLOAD_LEN], Temperature, Temperature) = sensor_agm::measure_as_array_bytes(&mut grideye);
+            
             //let stop = Instant::now();
             // 19ms so for now ok with 10fps for burst_mode
             //warn!("measure durration: {:?}", stop.duration_since(start));
@@ -297,7 +301,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
             let start = Instant::now();
             let payload = grid_raw
                 .into_iter()
-                .map(|b| b.to_be_bytes()) // f32 -> u32 -> [u8, u8, u8, u8]
+                .map(|b| b.to_be_bytes())
                 .flatten()
                 .collect::<Vec<_>>();
             let stop = Instant::now();
