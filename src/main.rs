@@ -9,7 +9,7 @@ use crate::sensor_agm::Temperature;
 use crate::sensor_agm::HeatMap;
 use crate::sensor_agm::Payload;
 use crate::sensor_agm::LEN;
-use crate::sensor_agm::POW;
+//use crate::sensor_agm::POW;
 use crate::sensor_agm::PAYLOAD_LEN;
 
 use eventloop::EventLoopMessage;
@@ -304,7 +304,18 @@ fn main() -> Result<(), WrapError<I2cError>> {
             };
 
             // SHOW ARRAY_INDEX
+            // index is u8 but method takes Temperature, try harder ...
+            // generic -> can be done, but what to do with array init
+            // honestly, we can just display ARRAY just to see, no need 2d array
             if app_config.flag_show_array_index {
+                sensor_agm::STATIC_ARRAY_FLIPPED_HORIZONTAL
+                    .chunks(LEN)
+                    .for_each(|chunk| {
+                        info!("{:?}", chunk)
+                    });
+                    
+                    
+                /*
                 let array_index: [Temperature; POW] = sensor_agm::STATIC_ARRAY_FLIPPED_HORIZONTAL
                     .iter()
                     .map(|i|*i as Temperature)
@@ -318,6 +329,7 @@ fn main() -> Result<(), WrapError<I2cError>> {
                     Ok(m) => info!("array_map_display:\n\n{m}"),
                     Err(e) => error!("array to heat_map failed >>> {e}"),
                 }
+                */
             }
 
             // DISPLAY HEATMAP

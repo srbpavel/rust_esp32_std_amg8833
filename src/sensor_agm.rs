@@ -4,9 +4,6 @@ use std::fmt::Display;
 
 use std::ops;
 
-//use std::any::Any;
-//use std::any::TypeId;
-
 use grideye::Framerate;
 use grideye::GridEye;
 
@@ -23,6 +20,7 @@ use log::info;
 #[allow(unused_imports)]
 use log::warn;
 
+// we use this also as init value
 const TEMPERATURE_ERROR_VALUE: f32 = 85_f32;
 
 pub const TEMPERATURE_MAX: f32 = -55_f32;
@@ -38,7 +36,16 @@ pub const STATIC_ARRAY: [u8; POW] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1
 */
 
 #[allow(unused)]
-pub const STATIC_ARRAY_FLIPPED_HORIZONTAL: [u8; POW] = [56, 57, 58, 59, 60, 61, 62, 63, 48, 49, 50, 51, 52, 53, 54, 55, 40, 41, 42, 43, 44, 45, 46, 47, 32, 33, 34, 35, 36, 37, 38, 39, 24, 25, 26, 27, 28, 29, 30, 31, 16, 17, 18, 19, 20, 21, 22, 23, 8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7];
+pub const STATIC_ARRAY_FLIPPED_HORIZONTAL: [u8; POW] = [
+    56, 57, 58, 59, 60, 61, 62, 63,
+    48, 49, 50, 51, 52, 53, 54, 55,
+    40, 41, 42, 43, 44, 45, 46, 47,
+    32, 33, 34, 35, 36, 37, 38, 39,
+    24, 25, 26, 27, 28, 29, 30, 31,
+    16, 17, 18, 19, 20, 21, 22, 23,
+    8, 9, 10, 11, 12, 13, 14, 15,
+    0, 1, 2, 3, 4, 5, 6, 7,
+];
 
 pub type Temperature = f32;
 
@@ -100,16 +107,6 @@ where
                     "{first}* {}  *{blank_line}{last}",
                     row.iter()
                         .map(|t| format!(" {t:02.02}"))
-                        /*
-                        .map(|t| {
-                            if is_temperature(t).eq(&true) {
-                                format!(" {t:02.02}")
-                            } else {
-                                format!(" {t:02}")
-                            }
-
-                        })
-                        */
                         .collect::<String>(),
                 )
             })
@@ -158,7 +155,7 @@ pub struct Payload<const N: usize>(pub [u8; N]);
 
 impl<const N: usize> From<Vec<u8>> for Payload<N> {
     fn from(raw_vec: Vec<u8>) -> Self {
-        let mut array: [u8; N] = [0 as u8; N];
+        let mut array: [u8; N] = [TEMPERATURE_ERROR_VALUE as u8; N];
 
         raw_vec
             .into_iter()
@@ -171,6 +168,7 @@ impl<const N: usize> From<Vec<u8>> for Payload<N> {
 
 //
 // L is output array len
+// output as temperature but need one more iteration later to conver each value
 #[allow(unused)]
 pub fn measure<I2C, D, E, const L: usize>(grideye: &mut GridEye<I2C, D>) -> ([Temperature; L], Temperature, Temperature)
 where
@@ -204,7 +202,7 @@ where
 
 
 //
-// single measurement return as be_bytes [u8; 4]
+// single measurement as be_bytes [u8; 4]
 // we save one iteration, but can be harder to debug
 #[allow(unused)]
 pub fn measure_as_be_bytes_flat<I2C, D, E>(grideye: &mut GridEye<I2C, D>) -> (Vec<u8>, Temperature, Temperature)
@@ -238,8 +236,8 @@ where
 }
 
 //
-// L is output array len
 // we output array instead vec
+// just for learning purpose !!!
 #[allow(unused)]
 pub fn measure_as_array_bytes<I2C, D, E, const L: usize>(grideye: &mut GridEye<I2C, D>) -> (Payload<L>, Temperature, Temperature)
 where
@@ -269,13 +267,16 @@ where
         })
         .collect::<Vec<u8>>();
 
+    // Try_Into does the job without any aditional code
+    //let array: Payload<L> = Payload(grid_raw.try_into().unwrap());
+    // just for learning purpose we implement From
     let array: Payload<L> = grid_raw.into();
     
     (array, min_temperature ,max_temperature)
 }
     
 //
-// just for debug purpose to see heatmap with temperature values
+// just for debug to see heatmap with temperature values
 pub fn payload_to_values<const N: usize>(payload: Payload<N>) -> Result<[Temperature; POW], Vec<Temperature>> {
     let chunks = payload.0.chunks(CHUNK_SIZE);
 
@@ -283,11 +284,7 @@ pub fn payload_to_values<const N: usize>(payload: Payload<N>) -> Result<[Tempera
         .map(|chunk| {
             let chunk_result: Result<[u8; 4], _> = chunk.try_into();
             let pixel_temp = match chunk_result {
-                Ok(value) => {
-                    let temp = f32::from_be_bytes(value);
-                    
-                    temp
-                },
+                Ok(value) => f32::from_be_bytes(value),
                 Err(e) => {
                     error!("### chunk error conversion: {e:?} {chunk:?}");
                     
@@ -301,13 +298,3 @@ pub fn payload_to_values<const N: usize>(payload: Payload<N>) -> Result<[Tempera
 
     TryInto::<[Temperature; POW]>::try_into(values)
 }
-
-/*
-fn is_temperature(s: &dyn Any) -> bool {
-    TypeId::of::<Temperature>() == s.type_id()
-}
-
-fn is_index(s: &dyn Any) -> bool {
-    TypeId::of::<u8>() == s.type_id()
-}
-*/
