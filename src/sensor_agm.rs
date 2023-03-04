@@ -270,7 +270,9 @@ where
     // Try_Into does the job without any aditional code
     //let array: Payload<L> = Payload(grid_raw.try_into().unwrap());
     // just for learning purpose we implement From
-    let array: Payload<L> = grid_raw.into();
+
+    //let array: Payload<L> = grid_raw.into();
+    let array = Payload::<L>::from(grid_raw);
     
     (array, min_temperature ,max_temperature)
 }
