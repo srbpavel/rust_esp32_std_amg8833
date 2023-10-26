@@ -261,7 +261,6 @@ fn main() -> Result<(), WrapError<esp_idf_sys::EspError>> {
                            app_config.wifi_ssid,
                            app_config.wifi_pass,
                            nvs_partition,
-                           //display_i2c_sender.clone(),
     )?;
 
     // MQTT
@@ -270,43 +269,11 @@ fn main() -> Result<(), WrapError<esp_idf_sys::EspError>> {
                mqtt_client_receiver,
     )?;
 
-    /*
-    let mqtt_topic_payload_via_build = mqtt::TopicKind::Payload.new(
-        &app_config.mqtt_topic_base,
-        &[app_config.machine_name,
-          &machine_uuid,
-        ],
-        //).ok_or_else(|| 0)?;
-    );
-
-    let mqtt_topic_common_log = mqtt::TopicKind::CommonLog.new(
-        &app_config.mqtt_topic_base,
-        &[app_config.mqtt_topic_common],
-    );
-    */
-
-    /*
-    let mqtt_topic_payload = mqtt::create_topic(
-        &app_config.mqtt_topic_base,
-        &[app_config.machine_name,
-          &machine_uuid,
-        ],
-    );
-
-    let mqtt_topic_common_log = mqtt::create_topic(
-        &app_config.mqtt_topic_base,
-        &[app_config.mqtt_topic_common],
-    );
-    */
-    
     // MQTT PUB: COMMON_LOG - > boot
-    // // warn!("mqtt_topic_common_log: {}", mqtt_topic_common_log);
     if let Err(e) = mqtt_client_sender.send(
         MqttPub::new(
-            // todo!() -> try harder not to clone !!!
-            //mqtt_topic_common_log.clone(),
             mqtt::TopicKind::CommonLog,
-            //format!("{} : boot", mqtt_topic_payload)
+            // todo!
             format!("{:?} : boot",
                     &[app_config.machine_name,
                       &machine_uuid,
@@ -330,13 +297,11 @@ fn main() -> Result<(), WrapError<esp_idf_sys::EspError>> {
             // FUTURE USE
             // MQTT PUB: COMMON_LOG - > beep_counter
             if (cycle_counter % BEEP_COUNTER).eq(&0) {
-                // //warn!("mqtt topic_common_log: {}", mqtt_topic_common_log);
                 if let Err(e) = mqtt_client_sender.send(
                     MqttPub::new(
-                        //mqtt_topic_common_log.clone(),
                         mqtt::TopicKind::CommonLog,
+                        // todo!
                         format!("{:?} : beep counter / {}",
-                                //mqtt_topic_payload,
                                 &[app_config.machine_name,
                                   &machine_uuid,
                                 ],
@@ -394,10 +359,8 @@ fn main() -> Result<(), WrapError<esp_idf_sys::EspError>> {
             }
 
             // MQTT PUB: payload
-            //warn!("mqtt topic_payload: {}", mqtt_topic_payload);
             if let Err(e) = mqtt_client_sender.send(
                 MqttPub::new(
-                    //mqtt_topic_payload.clone(),
                     mqtt::TopicKind::Payload,
                     &payload.0
                 )

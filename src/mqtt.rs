@@ -29,75 +29,7 @@ pub enum TopicKind {
     CommonLog,
 }
 
-/* // try harder
-impl TopicKind {
-    //
-    fn get(&self) -> String {
-        
-    }
-}
-*/
-
-/*
-impl TopicKind {
-    pub fn new<'a>(&self,
-                   base: &'a str,
-                   parts: &[&str],
-    ) -> Option<Topic> {
-        let mut path = std::path::PathBuf::new();
-        path.push(base);
-        
-        let topic = parts
-            .iter()
-            .fold(path, |topic, part|
-                  topic.join(part)
-            );
-        
-        match topic
-            .to_str() {
-                Some(t) => {
-                    match self {
-                        Self::Payload => {
-                            Some(Topic::Payload(String::from(t)))
-                        },
-                        Self::CommonLog => {
-                            Some(Topic::CommonLog(String::from(t)))
-                        },
-                    } 
-                },
-                None => {
-                    //todo! display error
-                    //todo! decide what now 
-                    /*
-                    format!("error create_topic to_str() -> {}",
-                    base,
-                    )
-                     */
-                    None
-                },
-            }
-    }
-}
-*/
-
-/*
-pub enum Topic {
-    Payload(String),
-    CommonLog(String),
-}
-
-impl Topic {
-    fn value(self) -> String {
-        match self {
-            Self::Payload(v) => v,
-            Self::CommonLog(v) => v,
-        }
-    }
-}
-*/
-
 pub struct MqttPub {
-    //topic: String,
     topic: TopicKind,
     // &[u8] is not safe to share between threads
     // Arc<u8> can also be used
@@ -106,8 +38,7 @@ pub struct MqttPub {
 
 impl MqttPub {
     //
-    pub fn new(//topic: String,
-        topic: TopicKind,
+    pub fn new(topic: TopicKind,
                msg: &[u8],
     ) -> Self {
         Self {
@@ -130,15 +61,6 @@ pub fn client_id(config: &Config,
      config.machine_name,
      uuid,
     ].join("_")
-    
-    /*
-    format!("{}_{}_{}_{}",
-            config.machine_type,
-            config.machine_number,
-            config.machine_name,
-            &uuid,
-    )
-    */
 }
 
 // base + machine + uuid
@@ -176,7 +98,6 @@ pub fn create_topic<'a>(base: &'a str,
 pub fn init(app_config: &Config,
             machine_uuid: &str,
             mqtt_client_receiver: std::sync::mpsc::Receiver<MqttPub>,
-//) -> Result<impl Client + Publish, crate::WrapError<EspError>> {
 ) -> Result<(), crate::WrapError<EspError>> {
     let mqtt_client_id_uniq = client_id(&app_config,
                                         machine_uuid,
@@ -242,21 +163,6 @@ pub fn init(app_config: &Config,
     });
     //_
 
-    /*
-    let mqtt_topic_payload_via_build = TopicKind::Payload.new(
-        &app_config.mqtt_topic_base,
-        &[app_config.machine_name,
-          &machine_uuid,
-        ],
-        //).ok_or_else(|| 0)?;
-    );
-
-    let mqtt_topic_common_log = TopicKind::CommonLog.new(
-        &app_config.mqtt_topic_base,
-        &[app_config.mqtt_topic_common],
-    );
-    */
-
     let mqtt_topic_common_log = create_topic(
         &app_config.mqtt_topic_base,
         &[app_config.mqtt_topic_common],
@@ -278,7 +184,6 @@ pub fn init(app_config: &Config,
 
             match mqtt_client.publish(
                 // &str
-                //&channel_data.topic,
                 match channel_data.topic {
                     TopicKind::CommonLog => {
                         warn!("mqtt_topic_common_log: {}", mqtt_topic_common_log);
@@ -310,8 +215,5 @@ pub fn init(app_config: &Config,
         }
     });
     
-    //Ok(mqtt_client)
     Ok(())
 }
-
-
