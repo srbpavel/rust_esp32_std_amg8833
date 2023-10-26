@@ -2,13 +2,11 @@
 #!!! otherwise default values from Struct
 #!!! if syntax is wrong it will also use Struct default values
 [rust_esp32_std_amg8833]
-
-uuid = ""
-
 mqtt_broker_url = "mqtt://192.168.0.103"
 mqtt_user = ""
 mqtt_pass = ""
-mqtt_topic = "/default_mqtt_topic/"
+mqtt_topic_base = "/default_mqtt_topic/"
+mqtt_topic_common = "common_log"
 
 wifi_ssid = ""
 wifi_pass = ""
@@ -19,7 +17,8 @@ machine_type = "esp32_c3_rev3_rust_board"
 machine_mac = "00:00:00:00:00:00"
 
 flag_debug = true #false
-flag_display = true #false
+flag_display_i2c = true #false
+flag_display_spi = true #false
 flag_show_array_index = false
 flag_show_heatmap = false
 flag_show_payload = true #false

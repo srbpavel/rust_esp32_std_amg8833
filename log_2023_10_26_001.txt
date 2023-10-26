@@ -1,0 +1,288 @@
+queen conan@spongebob:~/git/srbpavel/rust_esp32_std_amg8833$ cp cfg_queen.toml cfg.toml ; cargo espflash flash --release --monitor --port /dev/ttyACM2
+[2023-10-26T15:07:32Z INFO ] 🚀 A new version of cargo-espflash is available: v2.1.0
+[2023-10-26T15:07:32Z INFO ] Serial port: '/dev/ttyACM2'
+[2023-10-26T15:07:32Z INFO ] Connecting...
+[2023-10-26T15:07:32Z INFO ] Using flash stub
+   Compiling rust_esp32_std_amg8833 v0.1.0 (/home/conan/git/srbpavel/rust_esp32_std_amg8833)
+    Finished release [optimized] target(s) in 3.84s
+Chip type:         esp32c3 (revision v0.3)
+Crystal frequency: 40MHz
+Flash size:        4MB
+Features:          WiFi, BLE
+MAC address:       60:55:f9:c0:2d:d8
+Bootloader:        /home/conan/git/srbpavel/rust_esp32_std_amg8833/target/riscv32imc-esp-espidf/release/build/esp-idf-sys-41a429898ff3c88d/out/build/bootloader/bootloader.bin
+Partition table:   /home/conan/git/srbpavel/rust_esp32_std_amg8833/partitions.csv
+App/part. size:    1,106,224/3,145,728 bytes, 35.17%
+[00:00:00] [========================================]      12/12      0x0                                                                                            [00:00:00] [========================================]       1/1       0x8000                                                                                         [00:00:16] [========================================]     634/634     0x10000                                                                                        [2023-10-26T15:07:54Z INFO ] Flashing has completed!
+Commands:
+    CTRL+R    Reset chip
+    CTRL+C    Exit
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x15 (USB_UART_CHIP_RESET),boot:0xc (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40380786
+0x40380786 - esp_ota_get_app_elf_sha256
+    at /home/conan/git/srbpavel/rust_esp32_std_amg8833/.embuild/espressif/esp-idf/release-v4.4/components/app_update/esp_app_desc.c:97
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x16bc
+0x3fcd5810 - _static_data_end
+    at ??:??
+load:0x403cc710,len:0x930
+0x403cc710 - _iram_text_end
+    at ??:??
+load:0x403ce710,len:0x2db4
+0x403ce710 - _iram_text_end
+    at ??:??
+SHA-256 comparison failed:
+Calculated: b4602dbcd03afde87b2144e05670ea4c25a300878800e18d6d1fec5eaef1a63f
+Expected: f08bc531fcba393e9d880b922128cb4263f8fe96193439776e732ceb2e38e5f1
+Attempting to boot anyway...
+entry 0x403cc710
+0x403cc710 - _iram_text_end
+    at ??:??
+I (43) boot: ESP-IDF 9ee3c83-dirty 2nd stage bootloader
+I (43) boot: compile time 21:56:33
+I (43) boot: chip revision: 3
+I (45) boot.esp32c3: SPI Speed      : 80MHz
+I (50) boot.esp32c3: SPI Mode       : DIO
+I (55) boot.esp32c3: SPI Flash Size : 4MB
+I (59) boot: Enabling RNG early entropy source...
+I (65) boot: Partition Table:
+I (68) boot: ## Label            Usage          Type ST Offset   Length
+I (76) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (83) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (90) boot:  2 factory          factory app      00 00 00010000 00300000
+I (98) boot: End of partition table
+I (102) boot_comm: chip revision: 3, min. application chip revision: 0
+I (109) esp_image: segment 0: paddr=00010020 vaddr=3c0e0020 size=29468h (169064) map
+I (145) esp_image: segment 1: paddr=00039490 vaddr=3fc90c00 size=02c58h ( 11352) load
+I (147) esp_image: segment 2: paddr=0003c0f0 vaddr=40380000 size=03f28h ( 16168) load
+I (154) esp_image: segment 3: paddr=00040020 vaddr=42000020 size=d1520h (857376) map
+I (296) esp_image: segment 4: paddr=00111548 vaddr=40383f28 size=0cbbch ( 52156) load
+I (311) boot: Loaded app from partition at offset 0x10000
+I (311) boot: Disabling RNG early entropy source...
+I (323) cpu_start: Pro cpu up.
+I (331) cpu_start: Pro cpu start user code
+I (331) cpu_start: cpu freq: 160000000
+I (331) cpu_start: Application information:
+I (334) cpu_start: Project name:     libespidf
+I (339) cpu_start: App version:      1
+I (343) cpu_start: Compile time:     Oct 18 2023 21:56:38
+I (350) cpu_start: ELF file SHA256:  0000000000000000...
+I (356) cpu_start: ESP-IDF:          9ee3c83-dirty
+I (361) heap_init: Initializing. RAM available for dynamic allocation:
+I (368) heap_init: At 3FC97BB0 len 00044B60 (274 KiB): DRAM
+I (374) heap_init: At 3FCDC710 len 00002950 (10 KiB): STACK/DRAM
+I (381) heap_init: At 50000020 len 00001FE0 (7 KiB): RTCRAM
+I (388) spi_flash: detected chip: generic
+I (392) spi_flash: flash io: dio
+I (397) sleep: Configure to isolate all GPIO pins in sleep state
+I (403) sleep: Enable automatic switching of GPIO sleep configuration
+I (410) cpu_start: Starting scheduler.
+I (415) rust_esp32_std_amg8833: ### amg8833: array 8x8
+I (420) rust_esp32_std_amg8833: ### CONFIG >>> Config {
+    machine_number: 2,
+    machine_name: "queen",
+    machine_type: "esp32_c3_rev3_rust_board",
+    mqtt_topic_base: "/grid_eye",
+}
+ machine_uuid: b682f224051a4807a5ad6ca40aec831a
+W (442) rust_esp32_std_amg8833: machine_uptime: 41.411843s
+W (449) rust_esp32_std_amg8833: @@@ about to subscribe to the background event loop
+W (457) rust_esp32_std_amg8833: ### DISPLAY_SSD receiver
+I (473) pp: pp rom version: 9387209
+I (474) net80211: net80211 rom version: 9387209
+I (476) wifi:wifi driver task: 3fca90e0, prio:23, stack:6656, core=0
+I (479) system_api: Base MAC address is not set
+I (483) system_api: read default base MAC address from EFUSE
+I (494) wifi:wifi firmware version: b5b20ea
+I (494) wifi:wifi certification version: v7.0
+I (498) wifi:config NVS flash: enabled
+I (501) wifi:config nano formating: disabled
+I (505) wifi:Init data frame dynamic rx buffer num: 32
+I (510) wifi:Init management frame dynamic rx buffer num: 32
+I (515) wifi:Init management short buffer num: 32
+I (520) wifi:Init dynamic tx buffer num: 32
+I (524) wifi:Init static tx FG buffer num: 2
+I (528) wifi:Init static rx buffer size: 1600
+I (532) wifi:Init static rx buffer num: 10
+I (536) wifi:Init dynamic rx buffer num: 32
+I (540) wifi_init: rx ba win: 6
+I (543) wifi_init: tcpip mbox: 32
+I (548) wifi_init: udp mbox: 6
+I (551) wifi_init: tcp mbox: 6
+I (555) wifi_init: tcp tx win: 5744
+I (559) wifi_init: tcp rx win: 5744
+I (563) wifi_init: tcp mss: 1440
+I (567) wifi_init: WiFi IRAM OP enabled
+I (572) wifi_init: WiFi RX IRAM OP enabled
+I (585) rust_esp32_std_amg8833::wifi: Starting wifi...
+I (586) phy_init: phy_version 950,11a46e9,Oct 21 2022,08:56:12
+I (620) wifi:mode : sta (60:55:f9:c0:2d:d8)
+I (621) wifi:enable tsf
+I (623) rust_esp32_std_amg8833::wifi: Scanning...
+I (5724) rust_esp32_std_amg8833::wifi: Found configured access point maario_2 on channel 10
+I (5732) rust_esp32_std_amg8833::wifi: Connecting wifi...
+I (8138) wifi:new:<10,2>, old:<1,0>, ap:<255,255>, sta:<10,2>, prof:1
+I (8139) wifi:state: init -> auth (b0)
+I (8142) wifi:state: auth -> assoc (0)
+I (8147) wifi:state: assoc -> run (10)
+I (8159) wifi:connected with maario_2, aid = 2, channel 10, 40D, bssid = ac:84:c6:29:d7:f8
+I (8160) wifi:security: WPA2-PSK, phy: bgn, rssi: -48
+I (8162) wifi:pm start, type: 1
+
+I (8164) wifi:set rx beacon pti, rx_bcn_pti: 0, bcn_timeout: 0, mt_pti: 25000, mt_time: 10000
+I (8174) rust_esp32_std_amg8833::wifiI (8176) wifi:<ba-add>idx:0 (ifx:0, ac:84:c6:29:d7:f8), tid:0, ssn:0, winSize:64
+: Waiting for DHCP lease...
+I (8190) wifi:AP's beacon interval = 102400 us, DTIM period = 1
+I (9173) esp_netif_handlers: sta ip: 192.168.0.104, mask: 255.255.255.0, gw: 192.168.0.1
+I (9175) rust_esp32_std_amg8833::wifi: Wifi DHCP info: IpInfo { ip: 192.168.0.104, subnet: Subnet { gateway: 192.168.0.1, mask: Mask(24) }, dns: Some(192.168.0.1), secondary_dns: Some(0.0.0.0) }
+W (9194) rust_esp32_std_amg8833::mqtt: ### MQTT connection
+I (9196) rust_esp32_std_amg8833::mqtt: MQTT Message : Before connect
+W (9203) rust_esp32_std_amg8833::mqtt: ### MQTT PUB
+W (9209) rust_esp32_std_amg8833::mqtt: mqtt_topic_common_log: /grid_eye/common_log
+I (9227) rust_esp32_std_amg8833::mqtt: MQTT Message : Connected(false)
+W (9250) rust_esp32_std_amg8833::mqtt: mqtt topic_payload: /grid_eye/queen/b682f224051a4807a5ad6ca40aec831a
+I (9253) rust_esp32_std_amg8833: heat_map_display[cycle: 1]:
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * *
+*                                                   *
+*  21.75 21.50 22.00 22.25 22.50 23.25 23.75 25.50  *
+*                                                   *
+*  22.00 22.00 22.50 22.75 23.25 22.75 23.00 25.75  *
+*                                                   *
+*  21.75 22.25 23.00 23.50 24.00 24.00 23.25 24.75  *
+*                                                   *
+*  21.25 21.50 23.00 23.50 23.00 23.25 24.25 26.75  *
+*                                                   *
+*  21.50 21.75 22.50 22.00 22.50 40.25 33.75 26.75  *
+*                                                   *
+*  22.50 21.25 21.75 21.75 25.25 31.25 29.50 28.00  *
+*                                                   *
+*  22.75 21.75 22.25 22.25 26.50 28.25 29.75 29.00  *
+*                                                   *
+*  24.25 23.00 22.25 22.75 23.25 25.25 25.75 25.00  *
+*                                                   *
+* * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+W (9472) rust_esp32_std_amg8833::mqtt: mqtt topic_payload: /grid_eye/queen/b682f224051a4807a5ad6ca40aec831a
+I (9475) rust_esp32_std_amg8833: heat_map_display[cycle: 2]:
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * *
+*                                                   *
+*  20.75 21.50 21.50 22.50 22.75 22.50 24.50 26.25  *
+*                                                   *
+*  21.50 22.25 22.25 22.25 23.25 22.75 23.00 26.25  *
+*                                                   *
+*  21.50 21.50 23.00 23.25 24.25 24.50 22.75 25.00  *
+*                                                   *
+*  21.25 21.75 23.00 23.00 22.75 23.25 23.75 26.75  *
+*                                                   *
+*  21.50 22.25 22.75 22.75 22.75 40.50 33.50 27.50  *
+*                                                   *
+*  22.50 22.00 21.75 21.50 24.75 31.50 29.75 28.50  *
+*                                                   *
+*  22.50 21.00 22.00 22.00 26.75 27.75 29.75 28.75  *
+*                                                   *
+*  24.00 23.25 21.25 22.75 22.75 25.00 25.50 24.50  *
+*                                                   *
+* * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+W (9694) rust_esp32_std_amg8833::mqtt: mqtt topic_payload: /grid_eye/queen/b682f224051a4807a5ad6ca40aec831a
+I (9697) rust_esp32_std_amg8833: heat_map_display[cycle: 3]:
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * *
+*                                                   *
+*  21.75 21.75 21.75 23.00 22.50 22.75 24.25 25.75  *
+*                                                   *
+*  21.75 21.75 21.50 22.50 22.75 22.50 22.50 26.00  *
+*                                                   *
+*  21.50 22.00 23.00 23.50 24.00 24.75 22.50 25.25  *
+*                                                   *
+*  21.00 21.50 22.75 23.25 22.50 23.25 24.25 26.50  *
+*                                                   *
+*  22.00 22.00 22.75 22.50 23.50 40.25 33.75 26.75  *
+*                                                   *
+*  22.00 21.75 22.00 21.50 24.75 31.25 29.25 28.75  *
+*                                                   *
+*  23.00 21.25 21.75 22.00 27.00 28.00 29.75 28.75  *
+*                                                   *
+*  24.25 23.50 22.00 23.00 23.25 25.00 25.75 25.00  *
+*                                                   *
+* * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+W (9914) rust_esp32_std_amg8833::mqtt: mqtt topic_payload: /grid_eye/queen/b682f224051a4807a5ad6ca40aec831a
+I (9918) rust_esp32_std_amg8833: heat_map_display[cycle: 4]:
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * *
+*                                                   *
+*  21.75 22.25 21.50 23.00 22.75 23.25 24.25 25.50  *
+*                                                   *
+*  21.50 21.75 21.75 22.00 22.25 22.50 22.75 26.25  *
+*                                                   *
+*  21.25 21.75 23.25 23.25 24.00 24.00 22.75 24.50  *
+*                                                   *
+*  20.50 21.25 23.00 22.75 22.50 23.25 23.75 26.25  *
+*                                                   *
+*  21.50 21.75 22.50 22.50 22.75 40.25 33.25 26.50  *
+*                                                   *
+*  21.50 21.50 21.75 21.25 25.00 31.50 29.50 28.50  *
+*                                                   *
+*  22.50 21.25 21.25 21.75 26.25 27.50 29.50 28.50  *
+*                                                   *
+*  24.00 23.00 22.00 22.75 23.50 25.25 25.25 24.25  *
+*                                                   *
+* * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+W (10134) rust_esp32_std_amg8833::mqtt: mqtt topic_payload: /grid_eye/queen/b682f224051a4807a5ad6ca40aec831a
+I (10138) rust_esp32_std_amg8833: heat_map_display[cycle: 5]:
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * *
+*                                                   *
+*  21.50 21.75 22.75 23.25 23.00 22.75 24.50 26.25  *
+*                                                   *
+*  21.25 22.00 21.75 22.25 22.50 23.00 22.50 26.25  *
+*                                                   *
+*  21.50 21.50 23.25 23.25 24.00 23.75 23.00 25.25  *
+*                                                   *
+*  21.75 21.50 23.00 23.50 22.75 23.75 24.00 27.25  *
+*                                                   *
+*  21.25 21.75 22.00 21.75 22.50 40.00 33.25 26.00  *
+*                                                   *
+*  21.75 21.50 22.00 21.75 25.00 31.25 29.75 28.25  *
+*                                                   *
+*  22.25 21.25 22.00 22.50 27.00 28.00 29.00 29.25  *
+*                                                   *
+*  24.50 23.00 22.00 22.50 23.75 24.75 25.75 24.50  *
+*                                                   *
+* * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+W (10359) rust_esp32_std_amg8833::mqtt: mqtt topic_payload: /grid_eye/queen/b682f224051a4807a5ad6ca40aec831a
+I (10362) rust_esp32_std_amg8833: heat_map_display[cycle: 6]:
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * *
+*                                                   *
+*  22.00 21.75 22.25 22.75 23.25 22.75 25.00 25.50  *
+*                                                   *
+*  21.50 22.00 21.75 22.25 22.50 23.00 22.75 26.50  *
+*                                                   *
+*  21.25 21.25 22.75 23.50 24.00 24.25 23.25 24.75  *
+*                                                   *
+*  21.75 22.00 23.50 23.50 23.00 23.75 24.75 26.75  *
+*                                                   *
+*  21.00 21.75 22.25 22.25 22.50 40.00 33.50 26.25  *
+*                                                   *
+*  22.25 21.50 22.25 22.75 24.25 30.75 29.50 28.75  *
+*                                                   *
+*  22.50 22.00 21.75 23.75 26.25 28.25 29.25 29.75  *
+*                                                   *
+*  24.25 22.50 22.00 22.25 23.75 24.75 25.25 24.00  *
+*                                                   *
+* * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+W (10580) rust_esp32_std_amg8833::mqtt: mqtt topic_payload: /grid_eye/queen/b682f224051a4807a5ad6ca40aec831a
+I (10583) rust_esp32_std_amg8833: heat_map_display[cycle: 7]:
+
+queen conan@spongebob:~/git/srbpavel/rust_esp32_std_amg8833$

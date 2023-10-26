@@ -3,8 +3,8 @@
 // if cfg.toml is wrong it will quietly use default values !!!
 #[toml_cfg::toml_config]
 pub struct Config {
-    #[default("00000000-0000-0000-0000-000000000000")]
-    uuid: &'static str,
+    //#[default("00000000-0000-0000-0000-000000000000")]
+    //uuid: &'static str,
 
     #[default("")]
     mqtt_broker_url: &'static str,
@@ -12,8 +12,11 @@ pub struct Config {
     mqtt_user: &'static str,
     #[default("")]
     mqtt_pass: &'static str,
-    #[default("/default_mqtt_topic/")]
-    mqtt_topic: &'static str,
+    #[default("/default_mqtt_topic_base/")]
+    mqtt_topic_base: &'static str,
+
+    #[default("common_log")]
+    mqtt_topic_common: &'static str,
     
     #[default("")]
     wifi_ssid: &'static str,
@@ -32,7 +35,9 @@ pub struct Config {
     #[default(true)]
     flag_debug: bool,
     #[default(false)]
-    flag_display: bool,
+    flag_display_i2c: bool,
+    #[default(false)]
+    flag_display_spi: bool,
     #[default(false)]
     flag_show_array_index: bool,
     #[default(false)]
@@ -59,10 +64,11 @@ impl std::fmt::Debug for Config {
         //write!(f, "({}, {})", self.x, self.y)
 
         f.debug_struct("Config")
-            .field("uuid", &self.uuid)
+            //.field("uuid", &self.uuid)
             .field("machine_number", &self.machine_number)
             .field("machine_name", &self.machine_name)
             .field("machine_type", &self.machine_type)
+            .field("mqtt_topic_base", &self.mqtt_topic_base)
             .finish()
 
         /*

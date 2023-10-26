@@ -24,7 +24,7 @@ pub fn measure<I2C, E, D>(sensor: Option<Arc<Mutex<ShtC3<I2C>>>>,
 ) -> Option<Measurement>
 where
     I2C: Read<Error = E> + Write<Error = E> + WriteRead<Error = E>,
-    D: DelayUs<u16> + DelayMs<u16> +,
+    D: DelayUs<u16> + DelayMs<u16>,
     E: Debug,
 {
 

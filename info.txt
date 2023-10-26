@@ -2,6 +2,19 @@ find src/ -name "*rs" -exec egrep "unwrap" {} +
 
 cargo build --release --target riscv32imc-esp-espidf; ls -la /dev | egrep "ttyACM"
 
-cp cfg_queen.toml cfg.toml ; cargo espflash flash --release --monitor --port /dev/ttyACM0
+cp cfg_king.toml cfg.toml ; cargo espflash flash --release --monitor --port /dev/ttyACM0
+
+cp cfg_queen.toml cfg.toml ; cargo espflash flash --release --monitor --port /dev/ttyACM1
+
+cp cfg_witch.toml cfg.toml ; cargo espflash flash --release --monitor --port /dev/ttyACM2
 
 espmonitor --no-reset /dev/ttyACM0
+
+picocom /dev/ttyACM0 -b 115200
+
+###DOC
+#esp-rs nemaji online stare verze, proto generuji sam a ctu lokalne
+
+$cargo doc -p esp-idf-hal
+
+file:///home/conan/git/srbpavel/rust_esp32_std_amg8833/target/riscv32imc-esp-espidf/doc/esp_idf_hal/index.html

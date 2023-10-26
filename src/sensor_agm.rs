@@ -211,7 +211,7 @@ where
     D: DelayMs<u8>,
     E: Debug,
 {
-
+    
     let mut max_temperature = TEMPERATURE_MAX;
     let mut min_temperature = TEMPERATURE_MIN;
 
