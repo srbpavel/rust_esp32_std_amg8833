@@ -1,4 +1,3 @@
-//WIFI
 #[allow(unused_imports)]
 use log::error;
 #[allow(unused_imports)]
@@ -13,25 +12,21 @@ use embedded_svc::wifi::Configuration;
     
 use esp_idf_svc::eventloop::EspSystemEventLoop;
 use esp_idf_svc::wifi::EspWifi;
+use esp_idf_svc::wifi::BlockingWifi;
 
 use esp_idf_hal::peripheral::Peripheral;
 use esp_idf_hal::modem::Modem;
 
-use esp_idf_svc::wifi::BlockingWifi;
-
-// WIFI
+//
 pub fn wifi(
     modem: impl Peripheral<P = Modem> + 'static,
     sysloop: EspSystemEventLoop,
     ssid: &str,
     passwd: &str,
     nvs: esp_idf_svc::nvs::EspDefaultNvsPartition,
-    //display_ssd_sender: crate::Sender<crate::display_ssd::Render>,
-
 ) -> Result<Box<EspWifi<'static>>> {
     let mut esp_wifi = EspWifi::new(modem,
                                     sysloop.clone(),
-                                    //None,
                                     Some(nvs),
     )?;
 
@@ -56,6 +51,7 @@ pub fn wifi(
             ssid,
             ours.channel,
         );
+
         Some(ours.channel)
     } else {
         info!(
@@ -63,16 +59,6 @@ pub fn wifi(
             ssid,
         );
 
-        /*
-        crate::display_ssd::Render {
-            msg: format!("wifi ssid not found"),
-            point: crate::Point::new(0, 32),
-            clear: crate::DisplaySsdClear::True,
-            flush: crate::DisplaySsdFlush::True,
-            delay: Some(1000u32)
-        }.draw(&display_ssd_sender);
-        */
-        
         None
     };
 

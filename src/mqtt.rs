@@ -66,13 +66,12 @@ pub fn client_id(config: &Config,
 // base + machine + uuid
 // /grid_eye/king/1769ddd62b944786bbc8ea9fa50a5867"
 //
-// base + error_part
-// /grid_eye/error
+// base + common_log
+// /grid_eye/common_log
 //
-pub fn create_topic<'a>(base: &'a str,
-                        parts: &[&str],
+pub fn create_topic(base: &str,
+                    parts: &[&str],
 ) -> String {
-
     let mut path = std::path::PathBuf::new();
     path.push(base);
     
@@ -82,24 +81,20 @@ pub fn create_topic<'a>(base: &'a str,
               topic.join(part)
         );
 
-    match topic
-        .to_str() {
-            Some(t) => String::from(t),
-            None => {
-                //todo! display error
-                //todo! decide what now 
-                format!("error create_topic to_str() -> {}",
-                        base,
-                )
-            },
-        }
+    String::from(
+        topic.to_str().unwrap_or(
+            // todo!
+            "/grid_eye/common_log"
+        )
+    )
 }
 
+//
 pub fn init(app_config: &Config,
             machine_uuid: &str,
             mqtt_client_receiver: std::sync::mpsc::Receiver<MqttPub>,
 ) -> Result<(), crate::WrapError<EspError>> {
-    let mqtt_client_id_uniq = client_id(&app_config,
+    let mqtt_client_id_uniq = client_id(app_config,
                                         machine_uuid,
     );
     
@@ -164,17 +159,17 @@ pub fn init(app_config: &Config,
     //_
 
     let mqtt_topic_common_log = create_topic(
-        &app_config.mqtt_topic_base,
+        app_config.mqtt_topic_base,
         &[app_config.mqtt_topic_common],
     );
     
     let mqtt_topic_payload = create_topic(
-        &app_config.mqtt_topic_base,
+        app_config.mqtt_topic_base,
         &[app_config.machine_name,
-          &machine_uuid,
+          machine_uuid,
         ],
     );
-   
+    
     // MQTT CLIENT 
     warn!("### MQTT PUB");
     std::thread::spawn(move || {
@@ -182,20 +177,22 @@ pub fn init(app_config: &Config,
             // DEBUG
             //info!("$$$ MQTT PUB receiver msg: {channel_data:?}");
 
+            let topic = match channel_data.topic {
+                TopicKind::CommonLog => {
+                    warn!("mqtt_topic_common_log: {:?}", mqtt_topic_common_log);
+                    
+                    &mqtt_topic_common_log
+                },
+                TopicKind::Payload => {
+                    warn!("mqtt topic_payload: {:?}", mqtt_topic_payload);
+                    
+                    &mqtt_topic_payload
+                },
+            };
+            
             match mqtt_client.publish(
                 // &str
-                match channel_data.topic {
-                    TopicKind::CommonLog => {
-                        warn!("mqtt_topic_common_log: {}", mqtt_topic_common_log);
-
-                        &mqtt_topic_common_log
-                    },
-                    TopicKind::Payload => {
-                        warn!("mqtt topic_payload: {}", mqtt_topic_payload);
-
-                        &mqtt_topic_payload
-                    },
-                },
+                topic,
                 // qos
                 embedded_svc::mqtt::client::QoS::AtLeastOnce,
                 // retain: bool

@@ -3,10 +3,7 @@
 // if cfg.toml is wrong it will quietly use default values !!!
 #[toml_cfg::toml_config]
 pub struct Config {
-    //#[default("00000000-0000-0000-0000-000000000000")]
-    //uuid: &'static str,
-
-    #[default("")]
+    #[default("mqtt://localhost")]
     mqtt_broker_url: &'static str,
     #[default("")]
     mqtt_user: &'static str,
@@ -14,7 +11,6 @@ pub struct Config {
     mqtt_pass: &'static str,
     #[default("/default_mqtt_topic_base/")]
     mqtt_topic_base: &'static str,
-
     #[default("common_log")]
     mqtt_topic_common: &'static str,
     
