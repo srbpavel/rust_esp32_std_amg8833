@@ -39,13 +39,28 @@ use esp_idf_hal::delay::FreeRtos;
 use esp_idf_hal::i2c::I2cError;
 use esp_idf_hal::i2c::I2cDriver;
 
-/*
+// /*
 use esp_idf_hal::spi::SpiDeviceDriver;
 use esp_idf_hal::prelude::FromValueType;
 use esp_idf_hal::gpio::AnyOutputPin;
 use esp_idf_hal::gpio::AnyIOPin;
 use esp_idf_hal::gpio::PinDriver;
-*/
+// */
+
+// /*
+//use embedded_hal::blocking::delay::DelayUs;
+//use embedded_hal::blocking::delay::DelayMs;
+
+//use esp_idf_hal::delay::FreeRtos;
+//use std::sync::mpsc::Sender;
+//use embedded_graphics::geometry::Point;
+
+use embedded_graphics::mono_font::ascii::FONT_6X10;
+use embedded_graphics::mono_font::MonoTextStyleBuilder;
+use embedded_graphics::text::Text;
+use embedded_graphics::Drawable;
+use embedded_graphics::draw_target::DrawTarget;
+// */
 
 use grideye::Address;
 use grideye::GridEye;
@@ -108,7 +123,7 @@ fn main() -> Result<(), WrapError<esp_idf_sys::EspError>> {
     // FUTURE USE -> for parsing incomming msg/command
     //let (mqtt_sender, mqtt_receiver) = channel();
 
-    /*
+    // /*
     // todo! -> something here is slowing down measurement !!!
     // DISPLAY_SPI
     if app_config.flag_display_spi.eq(&true) {
@@ -191,8 +206,46 @@ fn main() -> Result<(), WrapError<esp_idf_sys::EspError>> {
                 // DC: OutputPin
                 dc,
             );
-            
+
             // MIPIDSI
+            let mut rst = esp_idf_hal::gpio::PinDriver::output(pin_rst)?;
+            warn!("$$$ SPI display PinDriver RST set_high()");
+            rst.set_high()?;
+
+            warn!("### DISPLAY SPI display init");
+            let mut display_spi = mipidsi::Builder::ili9341_rgb666(di)
+                .init(
+                    // DELAY: DelayUs<u32>
+                    &mut delay_spi,
+                    // RST: OutputPin,
+                    Some(rst),
+                    //None,
+                )?;
+
+            // CLEAR
+            warn!("$$$ SPI display clear");
+            if let Err(e) = display_spi
+                .clear(embedded_graphics::pixelcolor::RgbColor::RED) {
+                    error!("display_ili .clear() error: {e:?}")
+                }
+
+            // DRAW
+            warn!("$$$ SPI set text.draw()");
+            if let Err(e) = Text::new(
+                //&channel_data.msg,
+                &format!("machine: {}", app_config.machine_name),
+                //channel_data.point,
+                Point::new(100, 100),
+                MonoTextStyleBuilder::new()
+                    .font(&FONT_6X10)
+                    .text_color(embedded_graphics::pixelcolor::RgbColor::YELLOW)
+                    .background_color(embedded_graphics::pixelcolor::RgbColor::GREEN)
+                    .build(),
+            ).draw(&mut display_spi) {
+                error!("display_ili .draw() error: {e:?}")
+            }
+            
+            /*
             warn!("### DISPLAY_ILI init");
             if let Err(e) = display_ili::init(di,
                                               &mut delay_spi,
@@ -201,7 +254,9 @@ fn main() -> Result<(), WrapError<esp_idf_sys::EspError>> {
             ) {
                 error!("%%% Display SPI init error: {e:?}");
             }
+            */
             
+            /*
             // DISPLAY MSG INIT
             RenderIli {
                 msg: format!("machine: {}", app_config.machine_name),
@@ -210,9 +265,10 @@ fn main() -> Result<(), WrapError<esp_idf_sys::EspError>> {
                 //delay: Some(2000u32)
                 ..Default::default()
             }.draw(&display_spi_sender);
+            */
         }
     }
-    */
+    // */
     
     // VALID I2C pins
     let pin_scl = peripherals.pins.gpio8;

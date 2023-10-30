@@ -2,15 +2,24 @@ find src/ -name "*rs" -exec egrep "unwrap" {} +
 
 cargo build --release --target riscv32imc-esp-espidf; ls -la /dev | egrep "ttyACM"
 
-cp cfg_king.toml cfg.toml ; cargo espflash flash --release --monitor --port /dev/ttyACM0
+###FLASH
+cp cfg_king.toml cfg.toml ; cargo espflash flash --release --monitor --port /dev/ttyACM0 1>data_king_2023_10_27_spi_new_start.log 2>&1
 
 cp cfg_queen.toml cfg.toml ; cargo espflash flash --release --monitor --port /dev/ttyACM1
 
 cp cfg_witch.toml cfg.toml ; cargo espflash flash --release --monitor --port /dev/ttyACM2
 
+###MONITOR
 espmonitor --no-reset /dev/ttyACM0
+espmonitor --no-reset /dev/ttyACM0 1>data_king_2023_10_27_spi_new_start.log 2>&1
 
 picocom /dev/ttyACM0 -b 115200
+
+###WATCH
+watch -n0.1 "tail -n40 data_king_2023_10_27_spi_new_start.log"
+
+###DEBUG 
+cat -n data_king_2023_10_27_spi_new_start.log|egrep "cycle"|cut -d ":" -f 3|uniq -d
 
 ###DOC
 #esp-rs nemaji online stare verze, proto generuji sam a ctu lokalne
