@@ -162,7 +162,7 @@ pub fn init(app_config: &Config,
         app_config.mqtt_topic_base,
         &[app_config.mqtt_topic_common],
     );
-    
+
     let mqtt_topic_payload = create_topic(
         app_config.mqtt_topic_base,
         &[app_config.machine_name,
@@ -182,17 +182,29 @@ pub fn init(app_config: &Config,
                     warn!("mqtt_topic_common_log: {:?}", mqtt_topic_common_log);
                     
                     &mqtt_topic_common_log
+                    //mqtt_topic_common_log.clone()
                 },
                 TopicKind::Payload => {
+                    // FUTURE USE -> if uuid per measurement will be needed    
+                    /*
+                    let topic = create_topic(
+                        &mqtt_topic_payload,
+                        &[&uuid::Uuid::new_v4().simple().to_string()],
+                    );
+                    */
+                    
                     warn!("mqtt topic_payload: {:?}", mqtt_topic_payload);
+                    //warn!("mqtt topic_payload: {:?}", topic);
                     
                     &mqtt_topic_payload
+                    //topic
                 },
             };
             
             match mqtt_client.publish(
                 // &str
                 topic,
+                //&topic,
                 // qos
                 embedded_svc::mqtt::client::QoS::AtLeastOnce,
                 // retain: bool

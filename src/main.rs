@@ -491,7 +491,7 @@ fn main() -> Result<(), WrapError<esp_idf_sys::EspError>> {
             
             //
             RenderSsd {
-                msg: format!("min:  {temperature_max:0.02}"),
+                msg: format!("min:  {temperature_min:0.02}"),
                 point: Point::new(48, 16),
                 ..Default::default()
             }.draw(&display_i2c_sender);

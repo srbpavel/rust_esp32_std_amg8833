@@ -1,2 +1,6 @@
 [toolchain]
-channel = "nightly"
+# to rustc 1.76.0-nightly (ba7c7a301 2023-11-13)
+#channel = "nightly"
+# from rustc 1.67.0-nightly (01fbc5ae7 2022-12-07)
+channel = "nightly-2022-12-07"
+components = ["rust-src"]
